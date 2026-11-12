@@ -75,6 +75,9 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const vehicle = vehicles.find((v) => v.id === vehicleId);
   const showEnd = mode !== 'start';
   const willBeActiveNow = mode === 'edit' && c0.status === 'active';
+  // Overnight charges: an end time earlier than the start rolls over to the next day.
+  const preview = combineWhen(date, tStart, tEnd);
+  const endsNextDay = preview.startedAt != null && preview.endedAt != null && toDateInput(preview.endedAt) !== date;
   const showToggle = meterId === OTHER || c0.cost != null;
   const priceMode = showToggle ? toggleMode : 'kwh';
   const cur = currencySymbol();
@@ -254,7 +257,7 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
             <input type="time" value={tStart} onInput={(e) => setTStart((e.target as HTMLInputElement).value)} />
           </Field>
           {showEnd && (
-            <Field label="End">
+            <Field label="End" hint={endsNextDay ? 'next day' : undefined}>
               <input type="time" value={tEnd} onInput={(e) => setTEnd((e.target as HTMLInputElement).value)} />
             </Field>
           )}
