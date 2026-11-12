@@ -6,15 +6,11 @@ import { InstallBanner } from './install';
 import { MeterForm, VehicleForm } from './setup';
 import { useStore } from './store';
 import { chargeCost, sortKey, type Charge } from './types';
-import { duration, EditTag, money, num, PencilIcon, Sheet, timeLabel } from './ui';
+import { EditTag, money, num, Sheet } from './ui';
 
 export interface FormState { mode: Mode; charge: Charge }
 
-export function Home(props: {
-  openForm: (f: FormState) => void;
-  startAnother: () => void;
-  go: (v: 'history' | 'stats') => void;
-}) {
+export function Home(props: { go: (v: 'history' | 'stats') => void }) {
   const { data } = useStore();
   const [edit, setEdit] = useState<Charge | null>(null);
   const [, tick] = useState(0);
@@ -28,7 +24,6 @@ export function Home(props: {
   const vehicles = data.vehicles.filter((v) => !v.deleted);
   const meters = data.meters.filter((m) => !m.deleted);
   const charges = data.charges.filter((c) => !c.deleted);
-  const active = charges.filter((c) => c.status === 'active').sort((a, b) => sortKey(b) - sortKey(a));
   const done = charges.filter((c) => c.status === 'done').sort((a, b) => sortKey(b) - sortKey(a));
   const vName = (id: string) => data.vehicles.find((v) => v.id === id)?.name ?? 'Car';
   const where = (c: Charge) => data.meters.find((m) => m.id === c.meterId)?.name ?? (c.location || 'Other');
@@ -44,32 +39,7 @@ export function Home(props: {
 
   return (
     <div class="stack">
-      {active.map((c) => (
-        <section class="card live">
-          <div class="live-head">
-            <span class="pulse" aria-hidden="true" />
-            <div class="grow">
-              <div class="eyebrow">Charging{vehicles.length > 1 ? ` · ${vName(c.vehicleId)}` : ''} · {where(c)}</div>
-              <div class="big">{duration(Date.now() - sortKey(c))}</div>
-              <div class="muted small">
-                since {timeLabel(sortKey(c))}
-                {c.startPct != null && ` · from ${c.startPct}%`}
-                {c.meterStart != null && ` · meter ${num(c.meterStart, 2)}`}
-              </div>
-            </div>
-            <button class="link edit-link" onClick={() => props.openForm({ mode: 'edit', charge: c })}><PencilIcon /> Edit</button>
-          </div>
-          {active.length > 1 && (
-            <div class="actions">
-              <button class="ghost" onClick={() => props.openForm({ mode: 'finish', charge: c })}>Finish this charge</button>
-            </div>
-          )}
-        </section>
-      ))}
       <InstallBanner />
-      {active.length > 0 && vehicles.length > 1 && active.length < vehicles.length && (
-        <button class="link left" onClick={props.startAnother}>+ Start a charge for another car</button>
-      )}
 
       <section>
         <div class="row section-head">
@@ -140,12 +110,14 @@ function MeterBoard() {
   return (
     <section>
       <h3 class="section-title">Electric boards</h3>
-      <div class="meters">
+      <div class="cards">
         {meters.map((x) => (
-          <button class="meter" onClick={() => setEdit(x.id)}>
-            <span class="meter-head"><span class="meter-name">{x.name}</span><EditTag /></span>
-            <span class="meter-reading">{x.lastReading != null ? num(x.lastReading, 2) : '–'}<small> kWh</small></span>
-            <span class="muted">{x.pricePerKwh != null ? `${money(x.pricePerKwh, 2, 4)} / kWh` : 'no price set'}</span>
+          <button class="charge-card meter" onClick={() => setEdit(x.id)}>
+            <span class="cc-head"><span class="cc-title cc-date">{x.name}</span><EditTag /></span>
+            <span class="cc-main">
+              <span class="meter-reading">{x.lastReading != null ? num(x.lastReading, 2) : '–'}<small> kWh</small></span>
+              <span class="cc-cost">{x.pricePerKwh != null ? money(x.pricePerKwh, 2, 4) : '–'}<small> /kWh</small></span>
+            </span>
           </button>
         ))}
       </div>
@@ -173,7 +145,7 @@ function Onboarding() {
   );
 }
 
-const MIN_CARDS = 3;
+const MIN_CARDS = 1;
 const MAX_CARDS = 8;
 
 /**

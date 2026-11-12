@@ -6,8 +6,8 @@ import { Home, type FormState } from './home';
 import { Setup } from './setup';
 import { Stats } from './stats';
 import { confirmReplaceLocal, getState, onScheduleSync, pendingCount, connectSheet, useStore } from './store';
-import { sortKey } from './types';
-import { Sheet } from './ui';
+import { sortKey, type Charge } from './types';
+import { duration, PencilIcon, Sheet, timeLabel } from './ui';
 
 type View = 'home' | 'history' | 'stats' | 'setup';
 const TITLES: Record<View, string> = { home: 'EV Charger', history: 'History', stats: 'Stats', setup: 'Settings' };
@@ -46,6 +46,13 @@ export function App() {
       history.pushState({ view }, '');
     }
     return () => removeEventListener('popstate', pop);
+  }, []);
+
+  // Keep the ongoing-charge timer in the action bar current.
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => tick((n) => n + 1), 30000);
+    return () => clearInterval(t);
   }, []);
 
   async function runSync() {
@@ -88,6 +95,10 @@ export function App() {
     .filter((c) => !c.deleted && c.status === 'active')
     .sort((a, b) => sortKey(b) - sortKey(a));
   const showBar = hasVehicle && view !== 'setup';
+  const liveVehicles = s.data.vehicles.filter((v) => !v.deleted);
+  const hasMany = liveVehicles.length > 1;
+  const vName = (id: string) => s.data.vehicles.find((v) => v.id === id)?.name ?? 'Car';
+  const whereName = (c: Charge) => s.data.meters.find((m) => m.id === c.meterId)?.name ?? (c.location || 'Other');
 
   // Start defaults to a car that isn't already charging.
   function startCharge() {
@@ -122,7 +133,7 @@ export function App() {
         </div>
       </header>
       <main>
-        {view === 'home' && <Home openForm={setForm} startAnother={startCharge} go={go} />}
+        {view === 'home' && <Home go={go} />}
         {view === 'history' && <History />}
         {view === 'stats' && <Stats />}
         {view === 'setup' && <Setup onSync={runSync} syncError={syncError} />}
@@ -130,6 +141,30 @@ export function App() {
 
       {showBar && (
         <nav class="actionbar" aria-label="Charge actions">
+          {active.map((c) => (
+            <div class="live-strip">
+              <span class="pulse small" aria-hidden="true" />
+              <div class="live-text">
+                <span class="live-time">{duration(Date.now() - sortKey(c))}</span>
+                <span class="muted small">
+                  {[
+                    hasMany ? vName(c.vehicleId) : null,
+                    whereName(c),
+                    `since ${timeLabel(sortKey(c))}`,
+                    c.startPct != null ? `from ${c.startPct}%` : null,
+                  ].filter(Boolean).join(' · ')}
+                </span>
+              </div>
+              {active.length > 1 && (
+                <button class="link" onClick={() => setForm({ mode: 'finish', charge: c })}>Finish</button>
+              )}
+              <button class="edit-tag" onClick={() => setForm({ mode: 'edit', charge: c })}><PencilIcon /> Edit</button>
+            </div>
+          ))}
+          {active.length > 0 && hasMany && active.length < liveVehicles.length && (
+            <button class="link left" onClick={startCharge}>+ Start a charge for another car</button>
+          )}
+          <div class="bar-buttons">
           {active.length ? (
             <button class="primary main live-btn" onClick={() => setForm({ mode: 'finish', charge: active[0]! })}>
               <span class="pulse small" aria-hidden="true" /> Finish charging
@@ -143,6 +178,7 @@ export function App() {
           <button class="secondary side" onClick={() => setForm({ mode: 'log', charge: { ...newCharge(), status: 'done' } })}>
             + Log
           </button>
+          </div>
         </nav>
       )}
 

@@ -261,3 +261,17 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .meter .meter-head .edit-tag { position: static; }
 .cc-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .charge-card { gap: 4px; }
+.actionbar { flex-direction: column; gap: 10px; }
+.bar-buttons { display: flex; gap: 10px; }
+.live-strip {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border: 1px solid var(--live); border-radius: var(--radius); background: var(--surface);
+}
+.live-strip .pulse.small { background: var(--live); }
+.live-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.live-time { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.live-text .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meter .meter-reading { font-size: 22px; }
+.cc-cost small { font-size: 13px; font-weight: 400; color: var(--text-2); }
+button.edit-tag { background: none; cursor: pointer; }
+.actionbar .edit-tag, .actionbar .link { padding: 4px 10px; font-size: 13px; border-radius: 999px; }
