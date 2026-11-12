@@ -13,12 +13,22 @@ export function newCharge(): Charge {
   const meters = data.meters.filter((m) => !m.deleted);
   const vehicleId = vehicles.find((v) => v.id === settings.lastVehicleId)?.id ?? vehicles[0]?.id ?? '';
   const meter = meters.find((m) => m.id === settings.lastMeterId) ?? meters[0] ?? null;
+  const now = Date.now();
   return {
     id: uid(), updatedAt: 0, deleted: false, vehicleId, meterId: meter?.id ?? null, status: 'active',
-    startedAt: Date.now(), endedAt: null, startPct: null, endPct: null,
-    meterStart: meter?.lastReading ?? null, meterEnd: null, kwh: null, pricePerKwh: null, cost: null,
+    startedAt: now, endedAt: null, startPct: null, endPct: null,
+    meterStart: meter ? previousMeterEnd(meter.id) : null, meterEnd: null, kwh: null, pricePerKwh: null, cost: null,
     odometerKm: null, location: '', notes: '',
   };
+}
+
+/** Where the meter should be now: the end reading of its latest charge, else its last known reading. */
+export function previousMeterEnd(meterId: string, exceptId?: string): number | null {
+  const { data } = getState();
+  const last = data.charges
+    .filter((c) => !c.deleted && c.meterId === meterId && c.meterEnd != null && c.id !== exceptId)
+    .sort((a, b) => b.startedAt - a.startedAt)[0];
+  return last?.meterEnd ?? data.meters.find((m) => m.id === meterId)?.lastReading ?? null;
 }
 
 function lastOdometer(vehicleId: string): number | null {
@@ -47,6 +57,11 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const [kwh, setKwh] = useState(n2s(c0.kwh));
   const [price, setPrice] = useState(n2s(c0.pricePerKwh));
   const [cost, setCost] = useState(n2s(c0.cost));
+  // Home meters are usually billed per kWh; public chargers often just give a total.
+  const [priceMode, setPriceMode] = useState<'kwh' | 'total'>(
+    c0.cost != null ? 'total' : mode === 'edit' || c0.meterId ? 'kwh' : 'total',
+  );
+  const [priceModeTouched, setPriceModeTouched] = useState(mode === 'edit');
   const [odo, setOdo] = useState(n2s(c0.odometerKm));
   const [notes, setNotes] = useState(c0.notes);
   const [error, setError] = useState('');
@@ -61,18 +76,25 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const sp = parseNum(startPct);
   const ep = parseNum(endPct);
   const batteryKwh = vehicle?.batteryKwh && sp != null && ep != null && ep > sp ? ((ep - sp) / 100) * vehicle.batteryKwh : null;
-  const effKwh = parseNum(kwh) ?? meterKwh;
+  // With meter readings kWh is just end - start; the field is for chargers without a meter
+  // (and old records that only have a kWh figure).
+  const showKwhField = meterId === OTHER || (c0.kwh != null && c0.meterEnd == null && mode === 'edit');
+  const effKwh = showKwhField ? (parseNum(kwh) ?? meterKwh) : meterKwh;
   // A finished charge keeps the rate it was saved with: the meter's current rate is only
   // suggested for new or in-progress charges, never applied when editing an old one.
   const defaultPrice = mode !== 'edit' || c0.status === 'active' ? (meter?.pricePerKwh ?? null) : null;
   const effPrice = parseNum(price) ?? defaultPrice;
-  const computedCost = effKwh != null && effPrice != null ? effKwh * effPrice : null;
+  const total = parseNum(cost);
+  const effCost = priceMode === 'total' ? total : effKwh != null && effPrice != null ? effKwh * effPrice : null;
   const odoHint = lastOdometer(vehicleId);
+  const prevEnd = meterId ? previousMeterEnd(meterId, c0.id) : null;
+  const kwhShown = showEnd && showKwhField;
 
   function pickMeter(id: string) {
+    if (id === meterId) return;
     setMeterId(id);
-    const m = meters.find((x) => x.id === id);
-    if (m && !meterStart && m.lastReading != null) setMeterStart(String(m.lastReading));
+    if (id && mode !== 'edit') setMeterStart(n2s(previousMeterEnd(id, c0.id)));
+    if (!priceModeTouched) setPriceMode(id ? 'kwh' : 'total');
   }
 
   function submit(e: Event) {
@@ -99,8 +121,8 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
       meterStart: ms,
       meterEnd: showEnd ? me : null,
       kwh: showEnd ? effKwh : null,
-      pricePerKwh: showEnd ? effPrice : (parseNum(price) ?? null),
-      cost: showEnd ? parseNum(cost) : null,
+      pricePerKwh: showEnd && priceMode === 'kwh' ? effPrice : null,
+      cost: showEnd && priceMode === 'total' ? total : null,
       odometerKm: parseNum(odo),
       notes: notes.trim(),
     };
@@ -136,7 +158,7 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
             {meters.map((m) => (
               <button type="button" class={meterId === m.id ? 'chip on' : 'chip'} onClick={() => pickMeter(m.id)}>{m.name}</button>
             ))}
-            <button type="button" class={meterId === OTHER ? 'chip on' : 'chip'} onClick={() => setMeterId(OTHER)}>Other / public</button>
+            <button type="button" class={meterId === OTHER ? 'chip on' : 'chip'} onClick={() => pickMeter(OTHER)}>Other / public</button>
           </div>
         </Field>
         {meterId === OTHER && (
@@ -156,11 +178,11 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
 
         {meterId !== OTHER && (
           <>
-            <Field label="Meter at start" hint={meter?.lastReading != null ? `last: ${num(meter.lastReading, 2)}` : undefined}>
+            <Field label="Meter at start" hint={prevEnd != null ? `previous end: ${num(prevEnd, 2)}` : undefined}>
               <NumInput value={meterStart} onInput={setMeterStart} placeholder="kWh" />
             </Field>
             {showEnd && (
-              <Field label="Meter at end">
+              <Field label="Meter at end" hint={meterKwh != null ? `= ${num(meterKwh, 2)} kWh charged` : undefined}>
                 <NumInput value={meterEnd} onInput={setMeterEnd} placeholder="kWh" />
               </Field>
             )}
@@ -169,24 +191,50 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
 
         {showEnd && (
           <>
+            {showKwhField && (
+              <Field
+                label="kWh charged"
+                hint={batteryKwh != null ? `≈ ${num(batteryKwh)} kWh into the battery` : undefined}
+              >
+                <NumInput value={kwh} onInput={setKwh} placeholder={meterKwh != null ? String(meterKwh) : 'kWh'} />
+              </Field>
+            )}
+            </>
+        )}
+        <Field label="Odometer (km)" wide={!kwhShown} hint={odoHint != null ? `last: ${num(odoHint, 0)}` : undefined}>
+          <NumInput value={odo} onInput={setOdo} placeholder="optional" />
+        </Field>
+        {showEnd && (
+          <>
             <Field
-              label="kWh charged"
-              hint={meterKwh != null ? 'from meter readings' : batteryKwh != null ? `≈ ${num(batteryKwh)} kWh into the battery` : undefined}
+              label="Price"
+              wide
+              hint={priceMode === 'kwh'
+                ? (defaultPrice != null && !price ? 'current meter rate' : 'per kWh')
+                : 'total paid for this charge'}
             >
-              <NumInput value={kwh} onInput={setKwh} placeholder={meterKwh != null ? String(meterKwh) : 'kWh'} />
-            </Field>
-            <Field label="Price / kWh" hint={defaultPrice != null && !price ? 'current meter rate' : undefined}>
-              <NumInput value={price} onInput={setPrice} placeholder={defaultPrice != null ? String(defaultPrice) : '0.00'} />
-            </Field>
-            <Field label="Total cost" hint={cost ? 'overrides kWh × price' : 'leave empty to compute'}>
-              <NumInput value={cost} onInput={setCost} placeholder={computedCost != null ? computedCost.toFixed(2) : '0.00'} />
+              <div class="price-row">
+                <div class="seg" role="group" aria-label="Price type">
+                  {(['kwh', 'total'] as const).map((pm) => (
+                    <button
+                      type="button"
+                      class={priceMode === pm ? 'on' : ''}
+                      aria-pressed={priceMode === pm}
+                      onClick={() => { setPriceMode(pm); setPriceModeTouched(true); }}
+                    >
+                      {pm === 'kwh' ? '/kWh' : 'Total'}
+                    </button>
+                  ))}
+                </div>
+                {priceMode === 'kwh' ? (
+                  <NumInput value={price} onInput={setPrice} placeholder={defaultPrice != null ? String(defaultPrice) : '0.00'} />
+                ) : (
+                  <NumInput value={cost} onInput={setCost} placeholder="0.00" />
+                )}
+              </div>
             </Field>
           </>
         )}
-
-        <Field label="Odometer (km)" hint={odoHint != null ? `last: ${num(odoHint, 0)}` : undefined}>
-          <NumInput value={odo} onInput={setOdo} placeholder="optional" />
-        </Field>
 
         <Field label="Started">
           <input type="datetime-local" value={startedAt} onInput={(e) => setStartedAt((e.target as HTMLInputElement).value)} />
@@ -204,7 +252,10 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
 
       {showEnd && (
         <p class="summary">
-          {num(effKwh, 2, 'kWh')} · {money(parseNum(cost) ?? computedCost)}
+          {num(effKwh, 2, 'kWh')} · {money(effCost)}
+          {priceMode === 'total' && effCost != null && effKwh ? (
+            <span class="muted small"> ({money(effCost / effKwh, 2, 4)}/kWh)</span>
+          ) : null}
         </p>
       )}
       {error && <p class="error">{error}</p>}

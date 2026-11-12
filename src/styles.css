@@ -151,7 +151,7 @@ button { cursor: pointer; }
 .chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 .seg button { border: 0; background: none; padding: 5px 12px; font-size: 13px; }
-.seg button.on { background: var(--surface-2); font-weight: 600; }
+.seg button.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 
 /* forms */
 .form .grid, .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -197,3 +197,7 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .table th { color: var(--text-2); font-weight: 500; }
 .rates { margin-top: 18px; }
 .list-row.static { cursor: default; }
+.price-row { display: flex; gap: 8px; align-items: stretch; }
+.price-row .seg { flex: none; }
+.price-row .seg button { padding: 0 14px; font-size: 14px; }
+.price-row input { flex: 1; }
