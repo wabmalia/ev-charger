@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { computeMetrics, type MonthPoint } from './metrics';
+import { computeMetrics, MIN_STRETCH_KM, stretchRange, type MonthPoint, type Stretch } from './metrics';
 import { useStore } from './store';
 import { sortKey } from './types';
 import { money, num } from './ui';
@@ -28,7 +28,7 @@ export function Stats() {
     ['Total spent', money(m.cost), `${m.count} charges`],
     ['Energy', num(m.kwh, 0, 'kWh'), m.avgKwh != null ? `${num(m.avgKwh, 1)} kWh / charge` : undefined],
     ['Avg price', m.avgPrice != null ? money(m.avgPrice, 2, 4) : '–', 'per kWh paid'],
-    ['Consumption', num(m.kwhPer100km, 1, 'kWh'), 'per 100 km'],
+    ['Consumption', num(m.kwhPer100km, 1, 'kWh'), `per 100 km${m.pctPer100km != null ? ` · ${num(m.pctPer100km, 0)}% battery` : ''}`],
     ['Cost per 100 km', m.costPer100km != null ? money(m.costPer100km) : '–', m.kmDriven ? `${num(m.kmDriven, 0)} km tracked` : 'needs odometer on 2+ charges'],
     ['Charge every', m.avgDaysBetween != null ? `${num(m.avgDaysBetween, 1)} days` : '–', m.avgPctAdded != null ? `+${num(m.avgPctAdded, 0)}% on average` : undefined],
     ['Avg duration', m.avgHours != null ? `${num(m.avgHours, 1)} h` : '–'],
@@ -60,6 +60,8 @@ export function Stats() {
           </div>
         ))}
       </section>
+
+      <ConsumptionRange stretches={m.stretches} battery={m.batteryKwh} />
 
       {m.months.length > 0 && (
         <section class="card">
@@ -151,5 +153,91 @@ function MonthChart(props: { months: MonthPoint[]; measure: 'cost' | 'kwh' }) {
         })}
       </svg>
     </div>
+  );
+}
+
+/**
+ * Best / typical / worst consumption from individual drives between charges, with the range
+ * each implies on a full battery, and a strip of every measured drive.
+ */
+function ConsumptionRange(props: { stretches: Stretch[]; battery: number | null }) {
+  const r = stretchRange(props.stretches);
+  const [sel, setSel] = useState<number | null>(null);
+  if (!r) {
+    return (
+      <section class="card">
+        <h3 class="section-title">Consumption range</h3>
+        <p class="muted small">
+          Needs drives of {MIN_STRETCH_KM} km or more between two charges that both have the odometer, the end % of the
+          first and the start % of the next.
+        </p>
+      </section>
+    );
+  }
+  const cap = props.battery;
+  const cols: [string, number][] = [['Best', r.min], ['Typical', r.median], ['Worst', r.max]];
+  const lo = Math.floor(r.min - 1);
+  const hi = Math.ceil(r.max + 1);
+  const x = (v: number) => ((v - lo) / (hi - lo || 1)) * 100;
+  const pick = sel != null ? props.stretches[sel] : null;
+  // Stack dots that would overlap into rows (a light beeswarm) so every drive stays visible.
+  const rowEnd: number[] = [];
+  const rows: number[] = [];
+  props.stretches
+    .map((s, i) => ({ i, px: x(s.kwhPer100km) }))
+    .sort((p, q) => p.px - q.px)
+    .forEach(({ i, px }) => {
+      let row = rowEnd.findIndex((end) => px - end >= 4.5);
+      if (row < 0) row = rowEnd.push(-Infinity) - 1;
+      rowEnd[row] = px;
+      rows[i] = row;
+    });
+  const nRows = Math.max(1, rowEnd.length);
+  function pickNearest(e: MouseEvent) {
+    const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const v = lo + ((e.clientX - box.left) / box.width) * (hi - lo);
+    let best = 0;
+    props.stretches.forEach((s, i) => {
+      if (Math.abs(s.kwhPer100km - v) < Math.abs(props.stretches[best]!.kwhPer100km - v)) best = i;
+    });
+    setSel(sel === best ? null : best);
+  }
+  return (
+    <section class="card">
+      <h3 class="section-title">Consumption range</h3>
+      <div class="range-cols">
+        {cols.map(([label, v]) => (
+          <div>
+            <span class="tile-label">{label}</span>
+            <span class="range-value">{num(v, 1)}<small> kWh</small></span>
+            <span class="tile-sub">
+              {cap ? `${num((v / cap) * 100, 0)}% · ≈${num((cap / v) * 100, 0)} km range` : 'per 100 km'}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div
+        class="strip"
+        style={{ height: `${nRows * 14 + 22}px` }}
+        role="img"
+        aria-label={`${r.count} drives between ${num(r.min, 1)} and ${num(r.max, 1)} kWh per 100 km`}
+        onClick={pickNearest}
+      >
+        <div class="strip-track" />
+        <div class="strip-median" style={{ left: `${x(r.median)}%` }} />
+        {props.stretches.map((s, i) => (
+          <span
+            class={sel === i ? 'strip-dot on' : 'strip-dot'}
+            style={{ left: `${x(s.kwhPer100km)}%`, bottom: `${10 + rows[i]! * 14}px` }}
+          />
+        ))}
+      </div>
+      <div class="strip-axis"><span>{lo}</span><span>kWh / 100 km</span><span>{hi}</span></div>
+      <p class="muted small">
+        {pick
+          ? `${num(pick.kwhPer100km, 1)} kWh/100 km: ${num(pick.km, 0)} km using ${num(pick.pct, 0)}% of the battery.`
+          : `From ${r.count} drives between charges (${MIN_STRETCH_KM} km or more), using the battery % and odometer at each end. Tap a dot for details.`}
+      </p>
+    </section>
   );
 }

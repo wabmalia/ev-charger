@@ -59,3 +59,29 @@ describe('undated charges', () => {
     expect(m.avgDaysBetween).toBeCloseTo(2); // day 1 to day 5, 3 charges
   });
 });
+
+describe('consumption stretches', () => {
+  // 50 kWh battery. Charge 1 ends at 80% at 1000 km; charge 2 starts at 40% at 1200 km:
+  // 40% of 50 kWh = 20 kWh over 200 km = 10 kWh/100km.
+  const list = [
+    ch(1, { kwh: 20, endPct: 80, startPct: 40, odometerKm: 1000 }),
+    ch(4, { kwh: 25, startPct: 40, endPct: 90, odometerKm: 1200 }),
+    ch(6, { kwh: 10, startPct: 70, endPct: 90, odometerKm: 1350 }), // 20% = 10 kWh / 150 km = 6.67
+    ch(7, { kwh: 2, startPct: 85, endPct: 90, odometerKm: 1360 }), // 10 km: too short, skipped
+  ];
+  const m = computeMetrics(list, [v], () => 'Home');
+
+  it('measures each stretch from end % to the next start %', () => {
+    expect(m.stretches.map((s) => +s.kwhPer100km.toFixed(2))).toEqual([10, 6.67]);
+  });
+
+  it('gives consumption as % of the battery', () => {
+    expect(m.batteryKwh).toBe(50);
+    expect(m.pctPer100km).toBeCloseTo((m.kwhPer100km! / 50) * 100);
+  });
+
+  it('summarises best / typical / worst', async () => {
+    const { stretchRange } = await import('./metrics');
+    expect(stretchRange(m.stretches)).toMatchObject({ min: expect.closeTo(6.67, 2), max: 10, count: 2 });
+  });
+});

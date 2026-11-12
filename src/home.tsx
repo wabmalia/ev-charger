@@ -87,7 +87,7 @@ export function Home(props: {
           <div class="tile">
             <span class="tile-label">Consumption</span>
             <span class="tile-value">{num(m.kwhPer100km, 1, 'kWh')}</span>
-            <span class="tile-sub">per 100 km</span>
+            <span class="tile-sub">per 100 km{m.pctPer100km != null ? ` · ${num(m.pctPer100km, 0)}% battery` : ''}</span>
           </div>
           <div class="tile">
             <span class="tile-label">Cost per 100 km</span>

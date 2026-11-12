@@ -8,6 +8,20 @@ export interface MonthPoint {
   count: number;
 }
 
+/**
+ * A drive between two consecutive charges of the same car: the battery went from the first
+ * charge's end % to the next charge's start % over the odometer distance in between.
+ */
+export interface Stretch {
+  at: number;
+  km: number;
+  pct: number;
+  kwhPer100km: number;
+}
+
+/** Shorter drives are too coarse to measure with 1% battery steps. */
+export const MIN_STRETCH_KM = 30;
+
 export interface Metrics {
   count: number;
   kwh: number;
@@ -21,6 +35,12 @@ export interface Metrics {
   kmDriven: number | null;
   kwhPer100km: number | null;
   costPer100km: number | null;
+  /** kwhPer100km as % of the battery, when the cars involved share one battery size. */
+  pctPer100km: number | null;
+  /** Battery capacity used for the % figures (null when unknown or mixed). */
+  batteryKwh: number | null;
+  /** Consumption measured on individual stretches between two consecutive charges. */
+  stretches: Stretch[];
   /** Energy that reached the battery / energy drawn from the meter. */
   chargingEfficiency: number | null;
   /** Per month; undated charges are placed by their position in the log. */
@@ -119,6 +139,24 @@ export function computeMetrics(
     }
   }
 
+  const stretches: Stretch[] = [];
+  for (const list of byVehicle.values()) {
+    for (let i = 0; i + 1 < list.length; i++) {
+      const a = list[i]!;
+      const b = list[i + 1]!;
+      const cap = capacity.get(a.vehicleId);
+      if (!cap || a.odometerKm == null || b.odometerKm == null || a.endPct == null || b.startPct == null) continue;
+      const km = b.odometerKm - a.odometerKm;
+      const pct = a.endPct - b.startPct;
+      if (km < MIN_STRETCH_KM || pct <= 0) continue;
+      stretches.push({ at: sortKey(b), km, pct, kwhPer100km: ((pct / 100) * cap / km) * 100 });
+    }
+  }
+  stretches.sort((x, y) => x.at - y.at);
+
+  const caps = new Set([...byVehicle.keys()].map((id) => capacity.get(id) ?? null));
+  const batteryKwh = caps.size === 1 ? [...caps][0]! : null;
+
   return {
     count: charges.length,
     kwh,
@@ -131,6 +169,9 @@ export function computeMetrics(
     kmDriven: kmDriven || null,
     kwhPer100km: kmDriven ? (kwhDriven / kmDriven) * 100 : null,
     costPer100km: kmDriven ? (costDriven / kmDriven) * 100 : null,
+    pctPer100km: kmDriven && batteryKwh ? (kwhDriven / kmDriven) * 100 / batteryKwh * 100 : null,
+    batteryKwh,
+    stretches,
     chargingEfficiency: avg(eff),
     months: [...months.values()].sort((a, b) => a.month.localeCompare(b.month)),
     byLocation: [...locs.values()].sort((a, b) => b.kwh - a.kwh),
@@ -156,4 +197,13 @@ export function rateHistory(charges: Charge[], meterId: string) {
     } else out.push({ price: c.pricePerKwh!, from: c.startedAt, to: c.startedAt, count: 1 });
   }
   return out.reverse();
+}
+
+/** Best / typical (median) / worst consumption over the measured stretches. */
+export function stretchRange(stretches: Stretch[]) {
+  if (!stretches.length) return null;
+  const v = stretches.map((s) => s.kwhPer100km).sort((a, b) => a - b);
+  const mid = Math.floor(v.length / 2);
+  const median = v.length % 2 ? v[mid]! : (v[mid - 1]! + v[mid]!) / 2;
+  return { min: v[0]!, median, max: v[v.length - 1]!, count: v.length };
 }
