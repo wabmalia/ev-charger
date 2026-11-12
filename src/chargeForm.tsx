@@ -109,12 +109,17 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const needsMeter = showEnd && meterId !== OTHER && !showKwhField;
   const missing = (() => {
     const m: string[] = [];
+    // Same order as the form, top to bottom.
     if (!vehicleId) m.push('a car');
-    if (needsStart && !date) m.push('start date');
-    if (needsStart && !tStart) m.push('start time');
+    if (meterId === OTHER && !location.trim()) m.push('location');
+    if (sp == null) m.push('start %');
+    if (showEnd && ep == null) m.push('end %');
     if (needsMeter && ms == null) m.push('meter at start');
     if (needsMeter && me == null) m.push('meter at end');
     if (showEnd && showKwhField && effKwh == null) m.push('kWh charged');
+    if (showEnd && (priceMode === 'total' ? total == null : effPrice == null)) m.push('price');
+    if (needsStart && !date) m.push('start date');
+    if (needsStart && !tStart) m.push('start time');
     return m.length ? m.join(', ') : '';
   })();
 
@@ -194,16 +199,16 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
           </div>
         </Field>
         {meterId === OTHER && (
-          <Field label="Location" wide>
+          <Field label="Location" required wide>
             <input value={location} placeholder="e.g. Supercharger, work, friend's" onInput={(e) => setLocation((e.target as HTMLInputElement).value)} />
           </Field>
         )}
 
-        <Field label="Start %">
+        <Field label="Start %" required>
           <NumInput value={startPct} onInput={setStartPct} placeholder="20" autoFocus={mode === 'start'} />
         </Field>
         {showEnd && (
-          <Field label="End %">
+          <Field label="End %" required>
             <NumInput value={endPct} onInput={setEndPct} placeholder="80" autoFocus={mode === 'finish'} />
           </Field>
         )}
@@ -241,6 +246,7 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
           <>
             <Field
               label="Price"
+              required
               wide={showToggle}
               hint={priceMode === 'total' ? 'total paid' : defaultPrice != null && !price ? 'meter rate' : undefined}
             >
