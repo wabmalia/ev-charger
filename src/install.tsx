@@ -55,9 +55,12 @@ function ShareIcon() {
   );
 }
 
+function openShare() {
+  navigator.share?.({ title: 'EV Charger', url: location.origin + location.pathname }).catch(() => {});
+}
+
 export function InstallSteps() {
   const { canPrompt, prompt } = useInstall();
-  if (isStandalone()) return <p class="muted small">Installed. You're using the app version.</p>;
   if (canPrompt) {
     return (
       <div class="actions wrap">
@@ -66,18 +69,44 @@ export function InstallSteps() {
     );
   }
   if (isIOS()) {
+    const canShare = typeof navigator.share === 'function';
     return (
-      <ol class="steps">
-        <li>Tap <ShareIcon /> <b>Share</b> in Safari's toolbar.</li>
-        <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
-        <li>Make sure <b>Open as Web App</b> is on, then tap <b>Add</b>.</li>
-      </ol>
+      <>
+        <ol class="steps">
+          <li>
+            {canShare ? 'Open the share menu with the button below' : <>Tap <ShareIcon /> <b>Share</b> in Safari's toolbar</>}.
+          </li>
+          <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+          <li>Make sure <b>Open as Web App</b> is on, then tap <b>Add</b>.</li>
+        </ol>
+        {canShare && (
+          <>
+            <div class="actions wrap">
+              <button class="primary" onClick={openShare}><ShareIcon /> Share…</button>
+            </div>
+            <p class="muted small">
+              No "Add to Home Screen" in that menu? Use <ShareIcon /> Share in Safari's toolbar instead.
+            </p>
+          </>
+        )}
+      </>
     );
   }
   return (
     <p class="muted small">
       Use your browser menu and choose <b>Install app</b> or <b>Add to Home screen</b>.
     </p>
+  );
+}
+
+/** Settings card: hidden once the app runs installed. */
+export function InstallCard() {
+  if (isStandalone()) return null;
+  return (
+    <section class="card install">
+      <h3 class="section-title">Install on this phone</h3>
+      <InstallSteps />
+    </section>
   );
 }
 

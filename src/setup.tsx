@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import {
   clientId, createSpreadsheet, parseSpreadsheetId, redirectUri, sheetUrl, signIn, signOut, token,
 } from './google';
-import { InstallSteps } from './install';
+import { InstallCard } from './install';
 import { rateHistory } from './metrics';
 import { getState, importData, markAllDirty, pendingCount, remove, save, updateSettings, useStore } from './store';
 import { chargeCost, uid, type Data, type Meter, type Vehicle } from './types';
@@ -17,6 +17,7 @@ export function Setup(props: { onSync: () => void; syncError: string }) {
 
   return (
     <div class="stack">
+      <InstallCard />
       <section class="card">
         <div class="row"><h3 class="section-title">Cars</h3><button class="link" onClick={() => setEditV(newVehicle())}>+ Add</button></div>
         <ul class="list">
@@ -43,10 +44,7 @@ export function Setup(props: { onSync: () => void; syncError: string }) {
       </section>
 
       <SyncCard onSync={props.onSync} error={props.syncError} />
-      <section class="card">
-        <h3 class="section-title">Install on this phone</h3>
-        <InstallSteps />
-      </section>
+
       <DataCard />
 
       {editV && <Sheet title={editV.name || 'New car'} onClose={() => setEditV(null)}><VehicleForm vehicle={editV} onDone={() => setEditV(null)} /></Sheet>}
