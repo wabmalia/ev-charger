@@ -1,7 +1,7 @@
 /*
  * "Workshop" palette: asphalt/charcoal neutrals, industrial safety yellow as the
  * accent, safety orange for the live "charging" state. Dark only, by design.
- * WCAG contrast (checked): text 15:1, secondary text 7.4:1, ink on yellow 10:1,
+ * WCAG contrast (checked): text 15:1, secondary text 7.4:1, placeholders 5.4:1, ink on yellow 10:1,
  * ink on orange 8:1, yellow links 9.3:1, chart bars 9.3:1 on the card surface.
  */
 :root {
@@ -11,6 +11,7 @@
   --border: #3a4048;
   --text: #eef0f2;
   --text-2: #a3aab3;
+  --placeholder: #8a919a; /* 5.4:1 on inputs: dimmer than values, still AA */
   --accent: #f5b301;      /* safety yellow */
   --accent-ink: #14110a;
   --accent-soft: #2c2510;
@@ -153,6 +154,7 @@ input, select {
   width: 100%; min-width: 0; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--border);
   background: var(--surface); font-size: 16px; /* 16px stops iOS zoom */
 }
+input::placeholder { color: var(--placeholder); opacity: 1; }
 input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .summary { font-size: 18px; font-weight: 700; text-align: right; margin: 14px 0 0; font-variant-numeric: tabular-nums; }
 code.block { display: block; padding: 8px 10px; background: var(--surface-2); border-radius: 8px; font-size: 13px; word-break: break-all; margin: 8px 0 12px; }
