@@ -1,6 +1,6 @@
 // Offline support: network-first for pages, cache-first for hashed assets.
 // Google APIs are never cached.
-const CACHE = 'ev-charger-v1';
+const CACHE = 'ev-charger-v2'; // bump when unhashed files (icons, manifest) change
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => {

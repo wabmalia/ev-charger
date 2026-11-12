@@ -9,4 +9,5 @@ PWA for logging EV charges, deployed to GitHub Pages from `main` via `.github/wo
 - `src/merge.ts` – pure merge plan (tested). `src/metrics.ts` – dashboard numbers (tested).
 - Never hard-delete records; set `deleted: true` so the deletion syncs.
 - Run `npm run check && npm test && npm run build` before pushing.
-- Bump `CACHE` in `public/sw.js` only if the caching strategy changes; hashed assets refresh on their own.
+- Bump `CACHE` in `public/sw.js` when unhashed files change (icons, manifest) or the caching strategy changes; hashed JS/CSS refresh on their own.
+- Icons: `branding/logo.svg` (full square) is the source; PNGs in `public/` and `branding/` are rendered from it.

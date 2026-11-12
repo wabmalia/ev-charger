@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="EV Charger logo">
+  <rect width="512" height="512" fill="#101214"/>
+  <circle cx="256" cy="256" r="154" fill="none" stroke="#343A40" stroke-width="30"/>
+  <path d="M 148 366 A 154 154 0 1 1 366 364" fill="none" stroke="#FFB900" stroke-width="30" stroke-linecap="round"/>
+  <path d="M 279 153 L 185 273 H 249 L 229 359 L 332 231 H 265 Z" fill="#FFB900" stroke="#101214" stroke-width="8" stroke-linejoin="round"/>
+</svg>
