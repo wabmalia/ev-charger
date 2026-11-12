@@ -62,7 +62,10 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const ep = parseNum(endPct);
   const batteryKwh = vehicle?.batteryKwh && sp != null && ep != null && ep > sp ? ((ep - sp) / 100) * vehicle.batteryKwh : null;
   const effKwh = parseNum(kwh) ?? meterKwh;
-  const effPrice = parseNum(price) ?? meter?.pricePerKwh ?? null;
+  // A finished charge keeps the rate it was saved with: the meter's current rate is only
+  // suggested for new or in-progress charges, never applied when editing an old one.
+  const defaultPrice = mode !== 'edit' || c0.status === 'active' ? (meter?.pricePerKwh ?? null) : null;
+  const effPrice = parseNum(price) ?? defaultPrice;
   const computedCost = effKwh != null && effPrice != null ? effKwh * effPrice : null;
   const odoHint = lastOdometer(vehicleId);
 
@@ -172,8 +175,8 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
             >
               <NumInput value={kwh} onInput={setKwh} placeholder={meterKwh != null ? String(meterKwh) : 'kWh'} />
             </Field>
-            <Field label={`Price / kWh`} hint={meter?.pricePerKwh != null && !price ? 'meter default' : undefined}>
-              <NumInput value={price} onInput={setPrice} placeholder={meter?.pricePerKwh != null ? String(meter.pricePerKwh) : '0.00'} />
+            <Field label="Price / kWh" hint={defaultPrice != null && !price ? 'current meter rate' : undefined}>
+              <NumInput value={price} onInput={setPrice} placeholder={defaultPrice != null ? String(defaultPrice) : '0.00'} />
             </Field>
             <Field label="Total cost" hint={cost ? 'overrides kWh × price' : 'leave empty to compute'}>
               <NumInput value={cost} onInput={setCost} placeholder={computedCost != null ? computedCost.toFixed(2) : '0.00'} />

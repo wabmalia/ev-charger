@@ -3,7 +3,7 @@ import {
   clientId, createSpreadsheet, parseSpreadsheetId, redirectUri, sheetUrl, signIn, signOut, token,
 } from './google';
 import { getState, importData, markAllDirty, pendingCount, remove, save, updateSettings, useStore } from './store';
-import { chargeCost, uid, type Data, type Meter, type Vehicle } from './types';
+import { chargeCost, uid, type Charge, type Data, type Meter, type Vehicle } from './types';
 import { Field, money, n2s, num, NumInput, parseNum, Sheet } from './ui';
 
 export function Setup(props: { onSync: () => void; syncError: string }) {
@@ -96,10 +96,11 @@ export function MeterForm(props: { meter: Meter; onDone: () => void }) {
     }}>
       <div class="grid">
         <Field label="Name" wide><input value={name} placeholder="e.g. Home" required onInput={(e) => setName((e.target as HTMLInputElement).value)} /></Field>
-        <Field label="Price per kWh" hint="used as default on new charges"><NumInput value={price} onInput={setPrice} placeholder="0.18" /></Field>
+        <Field label="Price per kWh" hint="for new charges, past ones keep their rate"><NumInput value={price} onInput={setPrice} placeholder="0.18" /></Field>
         <Field label="Current reading (kWh)"><NumInput value={reading} onInput={setReading} placeholder="12345.6" /></Field>
         <Field label="Notes" wide><input value={notes} onInput={(e) => setNotes((e.target as HTMLInputElement).value)} placeholder="tariff, contract..." /></Field>
       </div>
+      <RateHistory meterId={m0.id} />
       <div class="actions">
         {exists && <button type="button" class="ghost danger" onClick={() => {
           if (confirm(`Remove ${m0.name}? Its charges are kept.`)) { remove('meters', m0); props.onDone(); }
@@ -107,6 +108,42 @@ export function MeterForm(props: { meter: Meter; onDone: () => void }) {
         <button class="primary" type="submit">Save</button>
       </div>
     </form>
+  );
+}
+
+/** Rates this meter has actually been charged at, derived from its charges (newest first). */
+export function rateHistory(charges: Charge[], meterId: string) {
+  const list = charges
+    .filter((c) => !c.deleted && c.status === 'done' && c.meterId === meterId && c.pricePerKwh != null)
+    .sort((a, b) => a.startedAt - b.startedAt);
+  const out: { price: number; from: number; to: number; count: number }[] = [];
+  for (const c of list) {
+    const last = out.at(-1);
+    if (last && last.price === c.pricePerKwh) {
+      last.to = c.startedAt;
+      last.count++;
+    } else out.push({ price: c.pricePerKwh!, from: c.startedAt, to: c.startedAt, count: 1 });
+  }
+  return out.reverse();
+}
+
+function RateHistory(props: { meterId: string }) {
+  const { data } = useStore();
+  const rates = rateHistory(data.charges, props.meterId);
+  if (!rates.length) return null;
+  const d = (t: number) => new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  return (
+    <div class="rates">
+      <h3 class="section-title">Rates charged here</h3>
+      <ul class="list">
+        {rates.map((r) => (
+          <li class="list-row static">
+            <span class="row-title">{money(r.price, 2, 4)} / kWh</span>
+            <span class="muted small">{r.from === r.to ? d(r.from) : `${d(r.from)} – ${d(r.to)}`} · {r.count}×</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
