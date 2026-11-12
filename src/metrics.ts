@@ -126,3 +126,19 @@ export function computeMetrics(
     byLocation: [...locs.values()].sort((a, b) => b.kwh - a.kwh),
   };
 }
+
+/** Rates this meter has actually been charged at, derived from its charges (newest first). */
+export function rateHistory(charges: Charge[], meterId: string) {
+  const list = charges
+    .filter((c) => !c.deleted && c.status === 'done' && c.meterId === meterId && c.pricePerKwh != null)
+    .sort((a, b) => a.startedAt - b.startedAt);
+  const out: { price: number; from: number; to: number; count: number }[] = [];
+  for (const c of list) {
+    const last = out.at(-1);
+    if (last && last.price === c.pricePerKwh) {
+      last.to = c.startedAt;
+      last.count++;
+    } else out.push({ price: c.pricePerKwh!, from: c.startedAt, to: c.startedAt, count: 1 });
+  }
+  return out.reverse();
+}

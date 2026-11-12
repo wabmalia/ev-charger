@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rateHistory } from './setup';
+import { rateHistory } from './metrics';
 import type { Charge } from './types';
 
 const ch = (day: number, price: number | null, meterId = 'm'): Charge => ({

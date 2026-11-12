@@ -3,8 +3,9 @@ import {
   clientId, createSpreadsheet, parseSpreadsheetId, redirectUri, sheetUrl, signIn, signOut, token,
 } from './google';
 import { InstallSteps } from './install';
+import { rateHistory } from './metrics';
 import { getState, importData, markAllDirty, pendingCount, remove, save, updateSettings, useStore } from './store';
-import { chargeCost, uid, type Charge, type Data, type Meter, type Vehicle } from './types';
+import { chargeCost, uid, type Data, type Meter, type Vehicle } from './types';
 import { Field, money, n2s, num, NumInput, parseNum, Sheet } from './ui';
 
 export function Setup(props: { onSync: () => void; syncError: string }) {
@@ -114,22 +115,6 @@ export function MeterForm(props: { meter: Meter; onDone: () => void }) {
       </div>
     </form>
   );
-}
-
-/** Rates this meter has actually been charged at, derived from its charges (newest first). */
-export function rateHistory(charges: Charge[], meterId: string) {
-  const list = charges
-    .filter((c) => !c.deleted && c.status === 'done' && c.meterId === meterId && c.pricePerKwh != null)
-    .sort((a, b) => a.startedAt - b.startedAt);
-  const out: { price: number; from: number; to: number; count: number }[] = [];
-  for (const c of list) {
-    const last = out.at(-1);
-    if (last && last.price === c.pricePerKwh) {
-      last.to = c.startedAt;
-      last.count++;
-    } else out.push({ price: c.pricePerKwh!, from: c.startedAt, to: c.startedAt, count: 1 });
-  }
-  return out.reverse();
 }
 
 function RateHistory(props: { meterId: string }) {
