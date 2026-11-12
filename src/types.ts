@@ -27,7 +27,13 @@ export interface Charge extends Base {
   /** Null means a charger without a tracked meter (public charger, friend's house...). */
   meterId: string | null;
   status: ChargeStatus;
-  startedAt: number;
+  /** When the charge started. Optional: imported or quickly logged charges may not have one. */
+  startedAt: number | null;
+  /**
+   * Ordering position (ms epoch). Equals startedAt when known; otherwise an estimate that only
+   * keeps the charge in the right place in lists and sequences. Never shown as a date.
+   */
+  sortAt: number;
   endedAt: number | null;
   startPct: number | null;
   endPct: number | null;
@@ -73,7 +79,7 @@ export const SCHEMA: Record<Table, { sheet: string; fields: Record<string, Field
     sheet: 'Charges',
     fields: {
       id: 'string', vehicleId: 'string', meterId: 'string', status: 'string',
-      startedAt: 'date', endedAt: 'date', startPct: 'number', endPct: 'number',
+      startedAt: 'date', sortAt: 'date', endedAt: 'date', startPct: 'number', endPct: 'number',
       meterStart: 'number', meterEnd: 'number', kwh: 'number', pricePerKwh: 'number',
       cost: 'number', odometerKm: 'number', location: 'string', notes: 'string',
       updatedAt: 'date', deleted: 'bool',
@@ -85,6 +91,11 @@ export const TABLES: Table[] = ['vehicles', 'meters', 'charges'];
 
 export function uid(): string {
   return crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+}
+
+/** Chronological position of a charge (its date, or its estimated place when undated). */
+export function sortKey(c: Charge): number {
+  return c.startedAt ?? c.sortAt;
 }
 
 /** Total cost of a charge: explicit cost, else kWh x price. */

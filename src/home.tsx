@@ -4,7 +4,7 @@ import { computeMetrics } from './metrics';
 import { InstallBanner } from './install';
 import { MeterForm, VehicleForm } from './setup';
 import { useStore } from './store';
-import { chargeCost, type Charge } from './types';
+import { chargeCost, sortKey, type Charge } from './types';
 import { dateLabel, duration, money, num, Sheet, timeLabel } from './ui';
 
 export interface FormState { mode: Mode; charge: Charge }
@@ -25,14 +25,14 @@ export function Home(props: {
   const vehicles = data.vehicles.filter((v) => !v.deleted);
   const meters = data.meters.filter((m) => !m.deleted);
   const charges = data.charges.filter((c) => !c.deleted);
-  const active = charges.filter((c) => c.status === 'active').sort((a, b) => b.startedAt - a.startedAt);
-  const done = charges.filter((c) => c.status === 'done').sort((a, b) => b.startedAt - a.startedAt);
+  const active = charges.filter((c) => c.status === 'active').sort((a, b) => sortKey(b) - sortKey(a));
+  const done = charges.filter((c) => c.status === 'done').sort((a, b) => sortKey(b) - sortKey(a));
   const vName = (id: string) => data.vehicles.find((v) => v.id === id)?.name ?? 'Car';
   const where = (c: Charge) => data.meters.find((m) => m.id === c.meterId)?.name ?? (c.location || 'Other');
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-  const month = done.filter((c) => c.startedAt >= monthStart);
+  const month = done.filter((c) => sortKey(c) >= monthStart);
   const monthKwh = month.reduce((a, c) => a + (c.kwh ?? 0), 0);
   const monthCost = month.reduce((a, c) => a + (chargeCost(c) ?? 0), 0);
   const m = computeMetrics(charges, data.vehicles, where);
@@ -47,9 +47,9 @@ export function Home(props: {
             <span class="pulse" aria-hidden="true" />
             <div class="grow">
               <div class="eyebrow">Charging{vehicles.length > 1 ? ` · ${vName(c.vehicleId)}` : ''} · {where(c)}</div>
-              <div class="big">{duration(Date.now() - c.startedAt)}</div>
+              <div class="big">{duration(Date.now() - sortKey(c))}</div>
               <div class="muted small">
-                since {timeLabel(c.startedAt)}
+                since {timeLabel(sortKey(c))}
                 {c.startPct != null && ` · from ${c.startPct}%`}
                 {c.meterStart != null && ` · meter ${num(c.meterStart, 2)}`}
               </div>

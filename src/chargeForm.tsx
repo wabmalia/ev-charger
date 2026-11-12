@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { getState, remove, save, updateSettings } from './store';
-import { uid, type Charge, type Meter } from './types';
+import { sortKey, uid, type Charge, type Meter } from './types';
 import { currencySymbol, Field, fromLocalInput, money, n2s, num, NumInput, parseNum, toLocalInput } from './ui';
 
 export type Mode = 'start' | 'finish' | 'log' | 'edit';
@@ -16,7 +16,7 @@ export function newCharge(): Charge {
   const now = Date.now();
   return {
     id: uid(), updatedAt: 0, deleted: false, vehicleId, meterId: meter?.id ?? null, status: 'active',
-    startedAt: now, endedAt: null, startPct: null, endPct: null,
+    startedAt: now, sortAt: now, endedAt: null, startPct: null, endPct: null,
     meterStart: meter ? previousMeterEnd(meter.id) : null, meterEnd: null, kwh: null, pricePerKwh: null, cost: null,
     odometerKm: null, location: '', notes: '',
   };
@@ -27,14 +27,14 @@ export function previousMeterEnd(meterId: string, exceptId?: string): number | n
   const { data } = getState();
   const last = data.charges
     .filter((c) => !c.deleted && c.meterId === meterId && c.meterEnd != null && c.id !== exceptId)
-    .sort((a, b) => b.startedAt - a.startedAt)[0];
+    .sort((a, b) => sortKey(b) - sortKey(a))[0];
   return last?.meterEnd ?? data.meters.find((m) => m.id === meterId)?.lastReading ?? null;
 }
 
 function lastOdometer(vehicleId: string): number | null {
   const list = getState().data.charges
     .filter((c) => !c.deleted && c.vehicleId === vehicleId && c.odometerKm != null)
-    .sort((a, b) => b.startedAt - a.startedAt);
+    .sort((a, b) => sortKey(b) - sortKey(a));
   return list[0]?.odometerKm ?? null;
 }
 
@@ -104,8 +104,10 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
     const start = fromLocalInput(startedAt);
     const end = showEnd ? fromLocalInput(endedAt) : null;
     if (!vehicleId) return setError('Pick a car first.');
-    if (start == null) return setError('Start time is required.');
-    if (end != null && end < start) return setError('End time is before the start.');
+    const willBeActive = mode === 'start' || (mode === 'edit' && c0.status === 'active' && end == null);
+    // Dates are optional for logged charges; a running charge needs its start for the timer.
+    if (start == null && willBeActive) return setError('A running charge needs its start time.');
+    if (start != null && end != null && end < start) return setError('End time is before the start.');
     if (showEnd && ms != null && me != null && me < ms) return setError('Meter at end is lower than at start.');
     for (const [label, v] of [['Start %', sp], ['End %', ep]] as const) {
       if (v != null && (v < 0 || v > 100)) return setError(`${label} must be between 0 and 100.`);
@@ -116,8 +118,10 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
       meterId: meterId || null,
       location: meterId ? '' : location.trim(),
       startedAt: start,
+      // Keep an undated charge where it was in the sequence (or "now" for a new one).
+      sortAt: start ?? end ?? c0.sortAt,
       endedAt: end,
-      status: mode === 'start' || (mode === 'edit' && c0.status === 'active' && end == null) ? 'active' : 'done',
+      status: willBeActive ? 'active' : 'done',
       startPct: sp,
       endPct: showEnd ? ep : null,
       meterStart: ms,
@@ -235,11 +239,11 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
           </>
         )}
 
-        <Field label="Started">
+        <Field label="Started" hint={mode === 'start' ? undefined : 'optional'}>
           <input type="datetime-local" value={startedAt} onInput={(e) => setStartedAt((e.target as HTMLInputElement).value)} />
         </Field>
         {showEnd && (
-          <Field label="Finished">
+          <Field label="Finished" hint="optional">
             <input type="datetime-local" value={endedAt} onInput={(e) => setEndedAt((e.target as HTMLInputElement).value)} />
           </Field>
         )}

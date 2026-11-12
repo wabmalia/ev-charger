@@ -5,7 +5,7 @@ import {
 import { InstallCard } from './install';
 import { rateHistory } from './metrics';
 import { getState, importData, markAllDirty, pendingCount, remove, save, updateSettings, useStore } from './store';
-import { chargeCost, uid, type Data, type Meter, type Vehicle } from './types';
+import { chargeCost, sortKey, uid, type Data, type Meter, type Vehicle } from './types';
 import { Field, money, n2s, num, NumInput, parseNum, Sheet } from './ui';
 
 export function Setup(props: { onSync: () => void; syncError: string }) {
@@ -127,7 +127,7 @@ function RateHistory(props: { meterId: string }) {
         {rates.map((r) => (
           <li class="list-row static">
             <span class="row-title">{money(r.price, 2, 4)} / kWh</span>
-            <span class="muted small">{r.from === r.to ? d(r.from) : `${d(r.from)} – ${d(r.to)}`} · {r.count}×</span>
+            <span class="muted small">{r.from == null || r.to == null ? 'no dates' : r.from === r.to ? d(r.from) : `${d(r.from)} – ${d(r.to)}`} · {r.count}×</span>
           </li>
         ))}
       </ul>
@@ -253,9 +253,9 @@ function DataCard() {
   function csv() {
     const { data } = getState();
     const rows = [['date', 'end', 'car', 'where', 'start_pct', 'end_pct', 'meter_start', 'meter_end', 'kwh', 'price_per_kwh', 'cost', 'odometer_km', 'notes']];
-    for (const c of data.charges.filter((x) => !x.deleted).sort((a, b) => a.startedAt - b.startedAt)) {
+    for (const c of data.charges.filter((x) => !x.deleted).sort((a, b) => sortKey(a) - sortKey(b))) {
       rows.push([
-        new Date(c.startedAt).toISOString(), c.endedAt ? new Date(c.endedAt).toISOString() : '',
+        c.startedAt != null ? new Date(c.startedAt).toISOString() : '', c.endedAt ? new Date(c.endedAt).toISOString() : '',
         data.vehicles.find((v) => v.id === c.vehicleId)?.name ?? '',
         data.meters.find((m) => m.id === c.meterId)?.name ?? c.location,
         n2s(c.startPct), n2s(c.endPct), n2s(c.meterStart), n2s(c.meterEnd), n2s(c.kwh), n2s(c.pricePerKwh),

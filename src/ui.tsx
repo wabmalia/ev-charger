@@ -30,7 +30,8 @@ export function num(n: number | null | undefined, digits = 1, unit = ''): string
   return unit ? `${s} ${unit}` : s;
 }
 
-export function dateLabel(t: number): string {
+export function dateLabel(t: number | null): string {
+  if (t == null) return 'No date';
   return new Date(t).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 }
 

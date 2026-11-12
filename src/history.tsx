@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import { ChargeForm } from './chargeForm';
 import { monthKey } from './metrics';
 import { useStore } from './store';
-import { chargeCost, type Charge } from './types';
+import { chargeCost, sortKey, type Charge } from './types';
 import { dateLabel, duration, money, num, Sheet } from './ui';
 
 export function History() {
@@ -12,13 +12,14 @@ export function History() {
   const vehicles = data.vehicles.filter((v) => !v.deleted);
   const charges = data.charges
     .filter((c) => !c.deleted && c.status === 'done' && (!vehicle || c.vehicleId === vehicle))
-    .sort((a, b) => b.startedAt - a.startedAt);
+    .sort((a, b) => sortKey(b) - sortKey(a));
   const where = (c: Charge) => data.meters.find((m) => m.id === c.meterId)?.name ?? (c.location || 'Other');
   const vName = (id: string) => data.vehicles.find((v) => v.id === id)?.name ?? '';
 
   const groups: { key: string; items: Charge[] }[] = [];
   for (const c of charges) {
-    const k = monthKey(c.startedAt);
+    // Undated charges sit in the month of their position in the log; the row says "No date".
+    const k = monthKey(sortKey(c));
     if (groups.at(-1)?.key !== k) groups.push({ key: k, items: [] });
     groups.at(-1)!.items.push(c);
   }
@@ -54,7 +55,7 @@ export function History() {
                         {where(c)}
                         {vehicles.length > 1 && ` · ${vName(c.vehicleId)}`}
                         {c.startPct != null && c.endPct != null && ` · ${c.startPct}→${c.endPct}%`}
-                        {c.endedAt != null && ` · ${duration(c.endedAt - c.startedAt)}`}
+                        {c.startedAt != null && c.endedAt != null && ` · ${duration(c.endedAt - c.startedAt)}`}
                       </div>
                     </div>
                     <div class="right">

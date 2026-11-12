@@ -6,6 +6,7 @@ import { Home, type FormState } from './home';
 import { Setup } from './setup';
 import { Stats } from './stats';
 import { getState, onScheduleSync, pendingCount, updateSettings, useStore } from './store';
+import { sortKey } from './types';
 import { Sheet } from './ui';
 
 type View = 'home' | 'history' | 'stats' | 'setup';
@@ -85,7 +86,7 @@ export function App() {
   const hasVehicle = s.data.vehicles.some((v) => !v.deleted);
   const active = s.data.charges
     .filter((c) => !c.deleted && c.status === 'active')
-    .sort((a, b) => b.startedAt - a.startedAt);
+    .sort((a, b) => sortKey(b) - sortKey(a));
   const showBar = hasVehicle && view !== 'setup';
 
   // Start defaults to a car that isn't already charging.

@@ -36,7 +36,7 @@ export function fromRow(table: Table, header: string[], row: unknown[]): Base | 
   if (!out.id) return null;
   if (out.updatedAt == null) out.updatedAt = 0;
   if (table === 'charges') {
-    if (out.startedAt == null) return null;
+    out.sortAt = (out.startedAt as number | null) ?? (out.sortAt as number | null) ?? 0;
     if (out.status !== 'active') out.status = 'done';
     if (out.vehicleId == null) out.vehicleId = '';
   }

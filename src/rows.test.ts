@@ -6,7 +6,7 @@ describe('rows', () => {
   const header = Object.keys(SCHEMA.charges.fields);
   const c: Charge = {
     id: 'abc', updatedAt: Date.UTC(2026, 0, 2), deleted: false, vehicleId: 'v1', meterId: null,
-    status: 'done', startedAt: Date.UTC(2026, 0, 1, 20), endedAt: Date.UTC(2026, 0, 2, 6),
+    status: 'done', startedAt: Date.UTC(2026, 0, 1, 20), sortAt: Date.UTC(2026, 0, 1, 20), endedAt: Date.UTC(2026, 0, 2, 6),
     startPct: 20, endPct: 80, meterStart: 1000, meterEnd: 1030.5, kwh: 30.5, pricePerKwh: 0.2,
     cost: null, odometerKm: 12000, location: 'Home', notes: '',
   };
@@ -26,5 +26,18 @@ describe('rows', () => {
 
   it('skips rows without id', () => {
     expect(fromRow('vehicles', ['id', 'name'], ['', 'Car'])).toBeNull();
+  });
+});
+
+describe('undated rows', () => {
+  it('keeps a charge without a start date, ordered by sortAt', () => {
+    const h = ['id', 'startedAt', 'sortAt', 'kwh'];
+    const r = fromRow('charges', h, ['x', '', '2026-03-01T10:00:00Z', 5]) as Charge;
+    expect(r.startedAt).toBeNull();
+    expect(r.sortAt).toBe(Date.parse('2026-03-01T10:00:00Z'));
+  });
+  it('defaults sortAt to startedAt for sheets without the column', () => {
+    const r = fromRow('charges', ['id', 'startedAt'], ['y', '2026-03-01T10:00:00Z']) as Charge;
+    expect(r.sortAt).toBe(r.startedAt);
   });
 });

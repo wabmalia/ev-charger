@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { computeMetrics, type MonthPoint } from './metrics';
 import { useStore } from './store';
+import { sortKey } from './types';
 import { money, num } from './ui';
 
 type Period = 'all' | '12m' | 'year';
@@ -15,7 +16,7 @@ export function Stats() {
   const now = new Date();
   const from = period === 'year' ? new Date(now.getFullYear(), 0, 1).getTime()
     : period === '12m' ? new Date(now.getFullYear() - 1, now.getMonth() + 1, 1).getTime() : 0;
-  const charges = data.charges.filter((c) => c.startedAt >= from && (!vehicle || c.vehicleId === vehicle));
+  const charges = data.charges.filter((c) => sortKey(c) >= from && (!vehicle || c.vehicleId === vehicle));
   const m = computeMetrics(charges, data.vehicles, (c) =>
     data.meters.find((x) => x.id === c.meterId)?.name ?? (c.location || 'Other / public'));
 
@@ -70,6 +71,9 @@ export function Stats() {
             </div>
           </div>
           <MonthChart months={m.months.slice(-12)} measure={measure} />
+          {m.undated > 0 && (
+            <p class="muted small">Includes {m.undated} {m.undated === 1 ? 'charge' : 'charges'} without a date, placed by {m.undated === 1 ? 'its' : 'their'} position in your log.</p>
+          )}
         </section>
       )}
 

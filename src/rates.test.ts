@@ -4,7 +4,7 @@ import type { Charge } from './types';
 
 const ch = (day: number, price: number | null, meterId = 'm'): Charge => ({
   id: String(day), updatedAt: 0, deleted: false, vehicleId: 'v', meterId, status: 'done',
-  startedAt: Date.UTC(2026, 0, day), endedAt: null, startPct: null, endPct: null, meterStart: null,
+  startedAt: Date.UTC(2026, 0, day), sortAt: Date.UTC(2026, 0, day), endedAt: null, startPct: null, endPct: null, meterStart: null,
   meterEnd: null, kwh: 10, pricePerKwh: price, cost: null, odometerKm: null, location: '', notes: '',
 });
 

@@ -1,4 +1,4 @@
-import { chargeCost, type Charge, type Vehicle } from './types';
+import { chargeCost, sortKey, type Charge, type Vehicle } from './types';
 
 export interface MonthPoint {
   /** YYYY-MM */
@@ -23,7 +23,10 @@ export interface Metrics {
   costPer100km: number | null;
   /** Energy that reached the battery / energy drawn from the meter. */
   chargingEfficiency: number | null;
+  /** Per month; undated charges are placed by their position in the log. */
   months: MonthPoint[];
+  /** Finished charges without a date. */
+  undated: number;
   byLocation: { name: string; kwh: number; cost: number; count: number }[];
 }
 
@@ -41,7 +44,7 @@ export function computeMetrics(
 ): Metrics {
   const charges = all
     .filter((c) => !c.deleted && c.status === 'done')
-    .sort((a, b) => a.startedAt - b.startedAt);
+    .sort((a, b) => sortKey(a) - sortKey(b));
 
   let kwh = 0;
   let cost = 0;
@@ -61,7 +64,8 @@ export function computeMetrics(
       pricedKwh += c.kwh;
       pricedCost += cc;
     }
-    const m = monthKey(c.startedAt);
+    // Undated charges go in the month of their place in the log (between their neighbours).
+    const m = monthKey(sortKey(c));
     const mp = months.get(m) ?? { month: m, kwh: 0, cost: 0, count: 0 };
     mp.kwh += k;
     mp.cost += cc ?? 0;
@@ -83,10 +87,16 @@ export function computeMetrics(
 
   const pct = charges.filter((c) => c.startPct != null && c.endPct != null).map((c) => c.endPct! - c.startPct!);
   const hours = charges
-    .filter((c) => c.endedAt != null && c.endedAt > c.startedAt)
-    .map((c) => (c.endedAt! - c.startedAt) / 3600000);
-  const gaps: number[] = [];
-  for (let i = 1; i < charges.length; i++) gaps.push((charges[i]!.startedAt - charges[i - 1]!.startedAt) / 86400000);
+    .filter((c) => c.startedAt != null && c.endedAt != null && c.endedAt > c.startedAt)
+    .map((c) => (c.endedAt! - c.startedAt!) / 3600000);
+  // Days between charges: span from the first to the last dated charge, divided by the number of
+  // charges in between (undated ones count, since they happened in that span).
+  const datedIdx = charges.flatMap((c, i) => (c.startedAt != null ? [i] : []));
+  const firstD = datedIdx[0];
+  const lastD = datedIdx[datedIdx.length - 1];
+  const avgDaysBetween = firstD != null && lastD != null && lastD > firstD
+    ? (charges[lastD]!.startedAt! - charges[firstD]!.startedAt!) / 86400000 / (lastD - firstD)
+    : null;
 
   // Consumption per vehicle: energy added at every charge after the first odometer
   // reading, up to the last one, divided by the distance between those readings.
@@ -117,13 +127,14 @@ export function computeMetrics(
     avgKwh: charges.length ? kwh / charges.length : null,
     avgPctAdded: avg(pct),
     avgHours: avg(hours),
-    avgDaysBetween: avg(gaps),
+    avgDaysBetween,
     kmDriven: kmDriven || null,
     kwhPer100km: kmDriven ? (kwhDriven / kmDriven) * 100 : null,
     costPer100km: kmDriven ? (costDriven / kmDriven) * 100 : null,
     chargingEfficiency: avg(eff),
     months: [...months.values()].sort((a, b) => a.month.localeCompare(b.month)),
     byLocation: [...locs.values()].sort((a, b) => b.kwh - a.kwh),
+    undated: charges.filter((c) => c.startedAt == null).length,
   };
 }
 
@@ -131,12 +142,16 @@ export function computeMetrics(
 export function rateHistory(charges: Charge[], meterId: string) {
   const list = charges
     .filter((c) => !c.deleted && c.status === 'done' && c.meterId === meterId && c.pricePerKwh != null)
-    .sort((a, b) => a.startedAt - b.startedAt);
-  const out: { price: number; from: number; to: number; count: number }[] = [];
+    .sort((a, b) => sortKey(a) - sortKey(b));
+  // from/to are the first and last *known* dates in each run (null if none are dated).
+  const out: { price: number; from: number | null; to: number | null; count: number }[] = [];
   for (const c of list) {
     const last = out.at(-1);
     if (last && last.price === c.pricePerKwh) {
-      last.to = c.startedAt;
+      if (c.startedAt != null) {
+        last.from ??= c.startedAt;
+        last.to = c.startedAt;
+      }
       last.count++;
     } else out.push({ price: c.pricePerKwh!, from: c.startedAt, to: c.startedAt, count: 1 });
   }
