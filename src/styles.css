@@ -41,8 +41,8 @@ h1, h2, h3 { margin: 0; }
 .topbar {
   position: sticky; top: 0; z-index: 5;
   display: flex; align-items: center; justify-content: space-between;
-  /* Extra room below the status bar: iOS fades content right under it in installed apps. */
-  padding: calc(env(safe-area-inset-top) + 20px) 16px 12px;
+  /* A little room below the status bar: iOS fades content right under it in installed apps. */
+  padding: calc(env(safe-area-inset-top) + 16px) 16px 10px;
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(10px);
 }
@@ -209,3 +209,12 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .signed-in { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 6px; font-weight: 600; }
 .link.danger { color: var(--danger); }
 .card-foot { display: flex; justify-content: flex-end; margin-top: 14px; }
+
+/*
+ * Some iOS versions give installed apps a web view that already stops above the home bar
+ * (main.tsx sets .short-viewport when it detects that); the home-bar inset would then be
+ * spacing on top of spacing.
+ */
+.short-viewport .actionbar { padding-bottom: 12px; }
+.short-viewport .app.with-bar { padding-bottom: 96px; }
+.short-viewport .sheet { padding-bottom: 0; }
