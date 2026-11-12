@@ -275,3 +275,16 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .cc-cost small { font-size: 13px; font-weight: 400; color: var(--text-2); }
 button.edit-tag { background: none; cursor: pointer; }
 .actionbar .edit-tag, .actionbar .link { padding: 4px 10px; font-size: 13px; border-radius: 999px; }
+
+/* iOS draws date/time inputs with a wide intrinsic size; reset it so they fit their column. */
+input[type='datetime-local'] {
+  -webkit-appearance: none; appearance: none; display: block; min-height: 46px; text-align: left; max-width: 100%;
+}
+input[type='datetime-local']::-webkit-date-and-time-value { text-align: left; }
+
+/* Sheets: vertical scrolling only, and the drag never moves the page behind. */
+.sheet-backdrop { overscroll-behavior: contain; touch-action: none; }
+.sheet { overflow: hidden; }
+.sheet-body { overflow-x: hidden; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.sheet-head { touch-action: none; }
+html:has(body.locked) { overflow: hidden; overscroll-behavior: none; }

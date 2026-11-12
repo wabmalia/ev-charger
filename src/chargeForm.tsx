@@ -239,11 +239,11 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
           </>
         )}
 
-        <Field label="Started" hint={mode === 'start' ? undefined : 'optional'}>
+        <Field label="Started" hint={mode === 'start' ? undefined : 'optional'} wide>
           <input type="datetime-local" value={startedAt} onInput={(e) => setStartedAt((e.target as HTMLInputElement).value)} />
         </Field>
         {showEnd && (
-          <Field label="Finished" hint="optional">
+          <Field label="Finished" hint="optional" wide>
             <input type="datetime-local" value={endedAt} onInput={(e) => setEndedAt((e.target as HTMLInputElement).value)} />
           </Field>
         )}
