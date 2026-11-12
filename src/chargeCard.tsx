@@ -13,7 +13,10 @@ export function ChargeCard(props: { charge: Charge; where: string; car?: string;
   return (
     <button class="charge-card" onClick={props.onEdit}>
       <div class="cc-head">
-        <span class="cc-date">{dateLabel(c.startedAt)}</span>
+        <span class="cc-title">
+          <span class="cc-date">{dateLabel(c.startedAt)}</span>
+          {meta && <span class="muted"> · {meta}</span>}
+        </span>
         <EditTag />
       </div>
       <div class="cc-main">
@@ -28,7 +31,6 @@ export function ChargeCard(props: { charge: Charge; where: string; car?: string;
           <span class="cc-pct">{c.startPct} → {c.endPct}%</span>
         </div>
       )}
-      <div class="muted small cc-meta">{meta}</div>
     </button>
   );
 }

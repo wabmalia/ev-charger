@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { ChargeCard } from './chargeCard';
 import { ChargeForm, type Mode } from './chargeForm';
 import { computeMetrics } from './metrics';
@@ -18,6 +18,8 @@ export function Home(props: {
   const { data } = useStore();
   const [edit, setEdit] = useState<Charge | null>(null);
   const [, tick] = useState(0);
+  const latestRef = useRef<HTMLElement>(null);
+  const fit = useFitCount(latestRef, data);
   useEffect(() => {
     const t = setInterval(() => tick((n) => n + 1), 30000);
     return () => clearInterval(t);
@@ -98,14 +100,16 @@ export function Home(props: {
         </div>
       </section>
 
-      <section>
+      {meters.length > 0 && <MeterBoard />}
+
+      <section ref={latestRef}>
         <div class="row section-head">
           <h3 class="section-title">Latest charges</h3>
           {done.length > 0 && <button class="link" onClick={() => props.go('history')}>History ›</button>}
         </div>
         {done.length ? (
           <div class="cards">
-            {done.slice(0, 3).map((c) => (
+            {done.slice(0, fit).map((c) => (
               <ChargeCard
                 charge={c}
                 where={where(c)}
@@ -118,8 +122,6 @@ export function Home(props: {
           <p class="muted small">No charges yet. Use the buttons below to start or log one.</p>
         )}
       </section>
-
-      {meters.length > 0 && <MeterBoard />}
 
       {edit && (
         <Sheet title="Edit charge" onClose={() => setEdit(null)}>
@@ -169,4 +171,32 @@ function Onboarding() {
       </section>
     </div>
   );
+}
+
+const MIN_CARDS = 3;
+const MAX_CARDS = 8;
+
+/**
+ * How many charge cards fit between the top of the "Latest charges" section and the bottom
+ * action bar on this screen, so taller phones show more without scrolling.
+ */
+function useFitCount(ref: { current: HTMLElement | null }, deps: unknown): number {
+  const [n, setN] = useState(3);
+  useLayoutEffect(() => {
+    function measure() {
+      const section = ref.current;
+      if (!section) return;
+      const top = section.getBoundingClientRect().top + scrollY;
+      const head = (section.querySelector('.section-head') as HTMLElement | null)?.offsetHeight ?? 32;
+      const bar = (document.querySelector('.actionbar') as HTMLElement | null)?.offsetHeight ?? 96;
+      const card = (section.querySelector('.charge-card') as HTMLElement | null)?.offsetHeight ?? 130;
+      const gap = 10;
+      const room = innerHeight - top - head - 8 - bar - 16;
+      setN(Math.min(MAX_CARDS, Math.max(MIN_CARDS, Math.floor((room + gap) / (card + gap)))));
+    }
+    measure();
+    addEventListener('resize', measure);
+    return () => removeEventListener('resize', measure);
+  }, [deps]);
+  return n;
 }

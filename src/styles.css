@@ -20,6 +20,7 @@
   --live-ink: #14110a;
   --bar: #f5b301;
   --bar-sel: #ffd34d;
+  --track: #4a525c;      /* empty part of bars: 2.2:1 on cards, yellow fill 4.3:1 on it */
   --danger: #ff7a6b;
   --radius: 14px;
   color-scheme: dark;
@@ -252,9 +253,11 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .cc-kwh, .cc-cost { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .cc-kwh small { font-size: 13px; font-weight: 400; color: var(--text-2); }
 .cc-battery { display: flex; align-items: center; gap: 10px; }
-.cc-bar { position: relative; flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.cc-bar { position: relative; flex: 1; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
 .cc-fill { position: absolute; top: 0; bottom: 0; background: var(--bar); border-radius: 4px; }
 .cc-pct { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; flex: none; }
 .cc-meta:empty { display: none; }
 .meter-head .meter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meter .meter-head .edit-tag { position: static; }
+.cc-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.charge-card { gap: 4px; }
