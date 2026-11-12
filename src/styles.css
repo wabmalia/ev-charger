@@ -195,3 +195,8 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .price-row input { flex: 1; }
 .price-row .unit { flex: none; align-self: center; font-weight: 600; color: var(--text-2); padding: 0 4px; min-width: 64px; }
 .bolt { width: 20px; height: 20px; flex: none; }
+.install { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.install .section-title { margin: 0; }
+.steps { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--text-2); }
+.steps b { color: var(--text); }
+.inline-icon { width: 18px; height: 18px; vertical-align: -3px; color: var(--accent); }

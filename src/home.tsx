@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { ChargeForm, type Mode } from './chargeForm';
 import { computeMetrics } from './metrics';
+import { InstallBanner } from './install';
 import { MeterForm, VehicleForm } from './setup';
 import { useStore } from './store';
 import { chargeCost, type Charge } from './types';
@@ -62,6 +63,7 @@ export function Home(props: {
           )}
         </section>
       ))}
+      <InstallBanner />
       {active.length > 0 && vehicles.length > 1 && active.length < vehicles.length && (
         <button class="link left" onClick={props.startAnother}>+ Start a charge for another car</button>
       )}
