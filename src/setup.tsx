@@ -221,16 +221,18 @@ function SyncCard(props: { onSync: () => void; error: string }) {
               catch { setMsg(sheetUrl(spreadsheetId)); }
             }}>Copy sheet link</button>
           </div>
-          <div class="actions wrap">
+        </>
+      )}
+      {(msg || props.error) && <p class={props.error ? 'error' : 'muted small'}>{props.error || msg}</p>}
+      {signedIn && spreadsheetId && (
+          <div class="card-foot">
             <button class="link danger" onClick={() => {
               if (!confirm('Disconnect from this sheet and sign out of Google? Data on this phone is kept, and the sheet is not touched.')) return;
               signOut();
               updateSettings({ spreadsheetId: null });
             }}>Disconnect</button>
           </div>
-        </>
       )}
-      {(msg || props.error) && <p class={props.error ? 'error' : 'muted small'}>{props.error || msg}</p>}
     </section>
   );
 }

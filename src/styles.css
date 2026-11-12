@@ -207,3 +207,4 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .list:empty { display: none; }
 .signed-in { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 6px; font-weight: 600; }
 .link.danger { color: var(--danger); }
+.card-foot { display: flex; justify-content: flex-end; margin-top: 14px; }
