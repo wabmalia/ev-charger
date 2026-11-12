@@ -114,3 +114,16 @@ export function Sheet(props: { title: string; onClose: () => void; children: Com
 }
 
 export const n2s = (n: number | null | undefined) => (n == null ? '' : String(n));
+
+export function PencilIcon() {
+  return (
+    <svg class="pencil" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  );
+}
+
+/** Visible "Edit" affordance inside a tappable row or card (the whole row stays tappable). */
+export function EditTag() {
+  return <span class="edit-tag"><PencilIcon /> Edit</span>;
+}

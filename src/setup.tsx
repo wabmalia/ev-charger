@@ -6,7 +6,7 @@ import { InstallCard } from './install';
 import { rateHistory } from './metrics';
 import { confirmReplaceLocal, getState, importData, pendingCount, connectSheet, remove, save, updateSettings, useStore } from './store';
 import { chargeCost, sortKey, uid, type Data, type Meter, type Vehicle } from './types';
-import { Field, money, n2s, num, NumInput, parseNum, Sheet } from './ui';
+import { EditTag, Field, money, n2s, num, NumInput, parseNum, Sheet } from './ui';
 
 export function Setup(props: { onSync: () => void; syncError: string }) {
   const { data } = useStore();
@@ -23,8 +23,11 @@ export function Setup(props: { onSync: () => void; syncError: string }) {
         <ul class="list">
           {vehicles.map((v) => (
             <li><button class="list-row" onClick={() => setEditV(v)}>
-              <span class="row-title">{v.name}</span>
-              <span class="muted small">{v.batteryKwh ? `${num(v.batteryKwh)} kWh battery` : 'battery size not set'}</span>
+              <div>
+                <div class="row-title">{v.name}</div>
+                <div class="muted small">{v.batteryKwh ? `${num(v.batteryKwh)} kWh battery` : 'battery size not set'}</div>
+              </div>
+              <EditTag />
             </button></li>
           ))}
         </ul>
@@ -36,8 +39,11 @@ export function Setup(props: { onSync: () => void; syncError: string }) {
         <ul class="list">
           {meters.map((m) => (
             <li><button class="list-row" onClick={() => setEditM(m)}>
-              <span class="row-title">{m.name}</span>
-              <span class="muted small">{m.pricePerKwh != null ? `${money(m.pricePerKwh, 2, 4)} / kWh` : 'no price'} · {m.lastReading != null ? num(m.lastReading, 2) : '–'} kWh</span>
+              <div>
+                <div class="row-title">{m.name}</div>
+                <div class="muted small">{m.pricePerKwh != null ? `${money(m.pricePerKwh, 2, 4)} / kWh` : 'no price'} · {m.lastReading != null ? num(m.lastReading, 2) : '–'} kWh</div>
+              </div>
+              <EditTag />
             </button></li>
           ))}
         </ul>

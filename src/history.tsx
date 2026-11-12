@@ -3,7 +3,7 @@ import { ChargeForm } from './chargeForm';
 import { monthKey } from './metrics';
 import { useStore } from './store';
 import { chargeCost, sortKey, type Charge } from './types';
-import { dateLabel, duration, money, num, Sheet } from './ui';
+import { dateLabel, duration, EditTag, money, num, Sheet } from './ui';
 
 export function History() {
   const { data } = useStore();
@@ -62,6 +62,7 @@ export function History() {
                       <div class="row-title">{num(c.kwh, 2, 'kWh')}</div>
                       <div class="muted small">{money(chargeCost(c))}</div>
                     </div>
+                    <EditTag />
                   </button>
                 </li>
               ))}

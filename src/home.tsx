@@ -5,7 +5,7 @@ import { InstallBanner } from './install';
 import { MeterForm, VehicleForm } from './setup';
 import { useStore } from './store';
 import { chargeCost, sortKey, type Charge } from './types';
-import { dateLabel, duration, money, num, Sheet, timeLabel } from './ui';
+import { dateLabel, duration, EditTag, money, num, PencilIcon, Sheet, timeLabel } from './ui';
 
 export interface FormState { mode: Mode; charge: Charge }
 
@@ -54,7 +54,7 @@ export function Home(props: {
                 {c.meterStart != null && ` · meter ${num(c.meterStart, 2)}`}
               </div>
             </div>
-            <button class="link" onClick={() => props.openForm({ mode: 'edit', charge: c })}>Edit</button>
+            <button class="link edit-link" onClick={() => props.openForm({ mode: 'edit', charge: c })}><PencilIcon /> Edit</button>
           </div>
           {active.length > 1 && (
             <div class="actions">
@@ -119,6 +119,7 @@ export function Home(props: {
                     <div class="row-title">{num(c.kwh, 2, 'kWh')}</div>
                     <div class="muted small">{money(chargeCost(c))}</div>
                   </div>
+                  <EditTag />
                 </button>
               </li>
             ))}
@@ -150,6 +151,7 @@ function MeterBoard() {
       <div class="meters">
         {meters.map((x) => (
           <button class="meter" onClick={() => setEdit(x.id)}>
+            <EditTag />
             <span class="meter-name">{x.name}</span>
             <span class="meter-reading">{x.lastReading != null ? num(x.lastReading, 2) : '–'}<small> kWh</small></span>
             <span class="muted">{x.pricePerKwh != null ? `${money(x.pricePerKwh, 2, 4)} / kWh` : 'no price set'}</span>
