@@ -240,7 +240,7 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
             </>
         )}
         <Field label="Odometer (km)" wide={!kwhShown && showToggle} hint={odoHint != null ? `last: ${num(odoHint, 0)}` : undefined}>
-          <NumInput value={odo} onInput={setOdo} placeholder="km" />
+          <NumInput value={odo} onInput={setOdo} placeholder="12500" />
         </Field>
         {showEnd && (
           <>
