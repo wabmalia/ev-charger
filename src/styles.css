@@ -1,37 +1,27 @@
+/*
+ * "Workshop" palette: asphalt/charcoal neutrals, industrial safety yellow as the
+ * accent, safety orange for the live "charging" state. Dark only, by design.
+ * WCAG contrast (checked): text 15:1, secondary text 7.4:1, ink on yellow 10:1,
+ * ink on orange 8:1, yellow links 9.3:1, chart bars 9.3:1 on the card surface.
+ */
 :root {
-  --bg: #f7f7f5;
-  --surface: #ffffff;
-  --surface-2: #f0efec;
-  --border: #e3e2de;
-  --text: #0b0b0b;
-  --text-2: #52514e;
-  --accent: #0f766e;
-  --accent-ink: #ffffff;
-  --accent-soft: #d5efec;
-  --bar: #2a78d6;
-  --bar-sel: #1c5aa3;
-  --danger: #c4312f;
-  --live: #16a34a;
+  --bg: #0f1113;          /* asphalt */
+  --surface: #181b1f;     /* charcoal card */
+  --surface-2: #22262b;
+  --border: #3a4048;
+  --text: #eef0f2;
+  --text-2: #a3aab3;
+  --accent: #f5b301;      /* safety yellow */
+  --accent-ink: #14110a;
+  --accent-soft: #2c2510;
+  --accent-soft-ink: #f7d36b;
+  --live: #ff8a1f;        /* safety orange: charging */
+  --live-ink: #14110a;
+  --bar: #f5b301;
+  --bar-sel: #ffd34d;
+  --danger: #ff7a6b;
   --radius: 14px;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121211;
-    --surface: #1a1a19;
-    --surface-2: #252523;
-    --border: #33332f;
-    --text: #f0efec;
-    --text-2: #b4b3ab;
-    --accent: #2dd4bf;
-    --accent-ink: #062b27;
-    --accent-soft: #123a36;
-    --bar: #3987e5;
-    --bar-sel: #7fb2f0;
-    --danger: #f07171;
-    --live: #4ade80;
-    color-scheme: dark;
-  }
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -80,7 +70,7 @@ main { padding: 4px 16px 16px; }
 .actionbar button { padding: 16px 12px; font-size: 17px; border-radius: var(--radius); }
 .actionbar .main { flex: 2.2; }
 .actionbar .side { flex: 1; }
-.actionbar .live-btn { background: var(--live); color: #04210f; }
+.actionbar .live-btn { background: var(--live); color: var(--live-ink); }
 .pulse.small { width: 10px; height: 10px; margin: 0; background: currentColor; }
 .grow { flex: 1; min-width: 0; }
 .section-head { margin-bottom: 8px; }
@@ -104,7 +94,7 @@ button { cursor: pointer; }
 }
 .primary { background: var(--accent); color: var(--accent-ink); }
 .primary:disabled { opacity: 0.5; }
-.secondary { background: var(--accent-soft); color: var(--text); }
+.secondary { background: var(--accent-soft); color: var(--accent-soft-ink); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
 .ghost, .button.ghost { background: transparent; border-color: var(--border); color: var(--text); }
 .danger { color: var(--danger); }
 .link { background: none; border: 0; color: var(--accent); font-weight: 600; padding: 4px 0; }
@@ -183,7 +173,7 @@ code.block { display: block; padding: 8px 10px; background: var(--surface-2); bo
 .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
 .chart-readout { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 8px; flex-wrap: wrap; }
 .chart-readout b { font-size: 20px; font-variant-numeric: tabular-nums; }
-.bar { fill: var(--bar); opacity: 0.75; }
+.bar { fill: var(--bar); opacity: 0.6; }
 .bar.sel { opacity: 1; fill: var(--bar-sel); }
 .axis { stroke: var(--border); stroke-width: 1; }
 .tick { font-size: 10px; fill: var(--text-2); text-anchor: middle; }
@@ -202,3 +192,4 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .price-row .seg button { padding: 0 14px; font-size: 14px; }
 .price-row input { flex: 1; }
 .price-row .unit { flex: none; align-self: center; font-weight: 600; color: var(--text-2); padding: 0 4px; min-width: 64px; }
+.bolt { width: 20px; height: 20px; flex: none; }

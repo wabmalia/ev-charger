@@ -124,7 +124,7 @@ function MonthChart(props: { months: MonthPoint[]; measure: 'cost' | 'kwh' }) {
       <div class="chart-readout">
         <span class="muted small">{new Date(p.month + '-01T00:00').toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
         <b>{fmt(p[measure])}</b>
-        <span class="muted small">{p.count} charges</span>
+        <span class="muted small">{p.count} {p.count === 1 ? 'charge' : 'charges'}</span>
       </div>
       <svg viewBox={`0 0 ${W} ${H + 18}`} role="img" aria-label={`${measure} per month`} onMouseLeave={() => setHover(null)}>
         <line x1="0" x2={W} y1={H} y2={H} class="axis" />

@@ -125,7 +125,10 @@ export function App() {
               <span class="pulse small" aria-hidden="true" /> Finish charging
             </button>
           ) : (
-            <button class="primary main" onClick={startCharge}>⚡ Start charge</button>
+            <button class="primary main" onClick={startCharge}>
+              <svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 5 13.5h5.5L9.5 22 19 9.5h-5.8z" fill="currentColor" /></svg>
+              Start charge
+            </button>
           )}
           <button class="secondary side" onClick={() => setForm({ mode: 'log', charge: { ...newCharge(), status: 'done' } })}>
             + Log
