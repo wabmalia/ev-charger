@@ -3,6 +3,7 @@ import {
   clientId, createSpreadsheet, parseSpreadsheetId, redirectUri, sheetUrl, signIn, signOut, token,
 } from './google';
 import { InstallCard } from './install';
+import { InviteSection } from './invite';
 import { rateHistory } from './metrics';
 import { getState, importData, markAllDirty, pendingCount, remove, save, updateSettings, useStore } from './store';
 import { chargeCost, uid, type Data, type Meter, type Vehicle } from './types';
@@ -173,7 +174,9 @@ function SyncCard(props: { onSync: () => void; error: string }) {
       {!signedIn ? (
         <>
           <p class="muted small">
-            {spreadsheetId
+            {spreadsheetId && !lastSyncAt
+              ? "You've been invited to a shared EV Charger sheet. Sign in with Google to load it."
+              : spreadsheetId
               ? `Signed out. ${pending ? `${pending} change(s) waiting. ` : ''}Sign in again to sync.`
               : 'Data lives in a Google Sheet in your Drive. Share the sheet with your partner and they can log charges too.'}
           </p>
@@ -181,7 +184,11 @@ function SyncCard(props: { onSync: () => void; error: string }) {
         </>
       ) : !spreadsheetId ? (
         <>
-          <p class="muted small">Create a fresh sheet, or paste the link of one that was shared with you.</p>
+          <p class="signed-in">✓ Signed in with Google <button class="link" onClick={() => { signOut(); updateSettings({}); }}>Sign out</button></p>
+          <p class="muted small">
+            Create a fresh sheet. If someone already set one up, ask them for the invite QR code or link
+            (Settings → Share with someone), or paste the sheet's link below.
+          </p>
           <div class="actions">
             <button class="primary" disabled={busy} onClick={async () => {
               setBusy(true);
@@ -207,17 +214,13 @@ function SyncCard(props: { onSync: () => void; error: string }) {
           </p>
           <div class="actions wrap">
             <a class="button ghost" href={sheetUrl(spreadsheetId)} target="_blank" rel="noopener">Open sheet</a>
-            <button class="ghost" onClick={async () => {
-              const url = `${redirectUri()}?sheet=${spreadsheetId}`;
-              try { await navigator.clipboard.writeText(url); setMsg('Invite link copied. Share the sheet with them in Google too.'); }
-              catch { setMsg(url); }
-            }}>Copy invite link</button>
             <button class="primary" onClick={props.onSync}>Sync now</button>
           </div>
           <div class="actions wrap">
             <button class="link" onClick={() => { if (confirm('Disconnect this sheet? Local data is kept.')) updateSettings({ spreadsheetId: null }); }}>Disconnect sheet</button>
             <button class="link" onClick={() => { signOut(); updateSettings({}); }}>Sign out</button>
           </div>
+          <InviteSection spreadsheetId={spreadsheetId} />
         </>
       )}
       {(msg || props.error) && <p class={props.error ? 'error' : 'muted small'}>{props.error || msg}</p>}

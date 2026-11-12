@@ -203,3 +203,7 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .primary .inline-icon { color: currentColor; }
 .card:has(> .list) { overflow: hidden; }
 .list:empty { display: none; }
+.invite { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.invite .steps a { color: var(--accent); font-weight: 600; }
+.qr { display: block; width: min(220px, 70%); height: auto; margin: 14px auto 4px; border-radius: 10px; }
+.signed-in { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 6px; font-weight: 600; }
