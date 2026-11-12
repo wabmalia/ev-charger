@@ -37,8 +37,15 @@ Apple developer account (CloudKit). Google works on iPhone too.
    It can also be overridden per device under Setup.
 
 Because the app stays in "Testing", Google shows an "unverified app" warning on
-sign-in; press Continue. Sign-in lasts about an hour, after that the app keeps
-working offline and asks to sign in again to sync.
+sign-in; press Continue. A Google session lasts about an hour. When the app opens
+with an expired session it renews it silently (a quick redirect to Google with
+`prompt=none` and back); if Google needs you to confirm, it shows "Sign in to sync"
+instead. Everything keeps working offline in the meantime and syncs later.
+No refresh tokens: a static site can't keep the client secret Google requires for
+them, and in Testing mode they would expire after 7 days anyway.
+
+Scopes: `spreadsheets` and `email` (the email is kept on the device as the login
+hint for silent sign-in). Add both under Data access on the consent screen.
 
 ## Develop
 

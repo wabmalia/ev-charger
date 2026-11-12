@@ -8,9 +8,15 @@ import { SCHEMA, TABLES, type Base, type Table } from './types';
  * popup, because popups are unreliable in installed iOS/Android PWAs.
  * The token lasts ~1h; everything works offline in between and syncs later.
  */
-const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
+// `email` (basic, non-sensitive) lets us remember which account to use for silent sign-in.
+const SCOPE = 'https://www.googleapis.com/auth/spreadsheets email';
 const TOKEN_KEY = 'ev-charger:token';
 const STATE_KEY = 'ev-charger:oauth-state';
+const HINT_KEY = 'ev-charger:login-hint';
+/** Set by an explicit sign-out: no silent sign-in until the user signs in themselves. */
+const NO_SILENT_KEY = 'ev-charger:no-silent';
+/** One silent attempt per app opening (sessionStorage lives as long as the app/tab). */
+const SILENT_TRIED_KEY = 'ev-charger:silent-tried';
 const API = 'https://sheets.googleapis.com/v4/spreadsheets';
 
 export function clientId(): string {
@@ -30,8 +36,8 @@ export function token(): string | null {
   }
 }
 
-export function signIn() {
-  const st = crypto.randomUUID();
+function authorize(silent: boolean) {
+  const st = (silent ? 's:' : 'i:') + crypto.randomUUID();
   sessionStorage.setItem(STATE_KEY, st);
   const p = new URLSearchParams({
     client_id: clientId(),
@@ -41,11 +47,34 @@ export function signIn() {
     include_granted_scopes: 'true',
     state: st,
   });
+  if (silent) p.set('prompt', 'none');
+  const hint = localStorage.getItem(HINT_KEY);
+  if (hint) p.set('login_hint', hint);
   location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${p}`);
+}
+
+export function signIn() {
+  authorize(false);
 }
 
 export function signOut() {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(HINT_KEY);
+  localStorage.setItem(NO_SILENT_KEY, '1');
+}
+
+/**
+ * On app open: if a sheet is connected but the ~1h Google session has expired, ask Google for a
+ * new one without showing anything (prompt=none). Google redirects straight back; if it can't do
+ * it silently, handleRedirect swallows the error and the app shows "Sign in to sync" as before.
+ * Returns true when it navigated away.
+ */
+export function trySilentSignIn(): boolean {
+  if (!getState().settings.spreadsheetId || token() || !clientId() || !navigator.onLine) return false;
+  if (localStorage.getItem(NO_SILENT_KEY) || sessionStorage.getItem(SILENT_TRIED_KEY)) return false;
+  sessionStorage.setItem(SILENT_TRIED_KEY, '1');
+  authorize(true);
+  return true;
 }
 
 /** Pick the token up from the URL fragment after the redirect. Returns an error message, if any. */
@@ -53,12 +82,26 @@ export function handleRedirect(): string | null {
   if (!location.hash.includes('access_token') && !location.hash.includes('error')) return null;
   const p = new URLSearchParams(location.hash.slice(1));
   history.replaceState(null, '', location.pathname + location.search);
-  if (p.get('error')) return `Google sign-in failed: ${p.get('error')}`;
-  if (p.get('state') !== sessionStorage.getItem(STATE_KEY)) return 'Google sign-in failed: state mismatch';
+  const expected = sessionStorage.getItem(STATE_KEY);
+  const silent = expected?.startsWith('s:') ?? false;
+  if (p.get('error')) return silent ? null : `Google sign-in failed: ${p.get('error')}`;
+  if (p.get('state') !== expected) return silent ? null : 'Google sign-in failed: state mismatch';
   const v = p.get('access_token')!;
   const exp = Date.now() + Number(p.get('expires_in') ?? 3600) * 1000;
   localStorage.setItem(TOKEN_KEY, JSON.stringify({ v, exp }));
+  if (!silent) localStorage.removeItem(NO_SILENT_KEY);
+  rememberAccount(v);
   return null;
+}
+
+/** Remember the signed-in account's email as a login hint for silent sign-in (stays on this device). */
+function rememberAccount(accessToken: string) {
+  fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(accessToken)}`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((info: { email?: string } | null) => {
+      if (info?.email) localStorage.setItem(HINT_KEY, info.email);
+    })
+    .catch(() => {});
 }
 
 class AuthError extends Error {}

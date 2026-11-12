@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { ChargeForm, newCharge } from './chargeForm';
-import { handleRedirect, isAuthError, sync, token } from './google';
+import { handleRedirect, isAuthError, sync, token, trySilentSignIn } from './google';
 import { History } from './history';
 import { Home, type FormState } from './home';
 import { Setup } from './setup';
@@ -15,6 +15,8 @@ const TITLES: Record<View, string> = { home: 'EV Charger', history: 'History', s
 // Runs once on load: OAuth redirect result and ?sheet= invite links.
 const bootError = handleRedirect();
 const invite = new URLSearchParams(location.search).get('sheet');
+// Expired Google session on open: renew it silently (navigates to Google and straight back).
+const renewing = !invite && !bootError && trySilentSignIn();
 if (invite) {
   history.replaceState(null, '', location.pathname);
   const cur = getState().settings.spreadsheetId;
@@ -24,6 +26,7 @@ if (invite) {
 }
 
 export function App() {
+  if (renewing) return null; // about to leave for Google and come straight back
   const s = useStore();
   const [view, setView] = useState<View>(() => (bootError || invite ? 'setup' : 'home'));
   const [form, setForm] = useState<FormState | null>(null);
