@@ -25,6 +25,10 @@ addEventListener('appinstalled', () => {
 export const isStandalone = () =>
   matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
 
+/** Phones and tablets only: installing on desktop is uncommon, so we don't suggest it there. */
+export const isMobile = () =>
+  isIOS() || /Android|Mobi/i.test(navigator.userAgent) || matchMedia('(pointer: coarse)').matches;
+
 export const isIOS = () =>
   /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
@@ -55,10 +59,6 @@ function ShareIcon() {
   );
 }
 
-function openShare() {
-  navigator.share?.({ title: 'EV Charger', url: location.origin + location.pathname }).catch(() => {});
-}
-
 export function InstallSteps() {
   const { canPrompt, prompt } = useInstall();
   if (canPrompt) {
@@ -69,27 +69,12 @@ export function InstallSteps() {
     );
   }
   if (isIOS()) {
-    const canShare = typeof navigator.share === 'function';
     return (
-      <>
-        <ol class="steps">
-          <li>
-            {canShare ? 'Open the share menu with the button below' : <>Tap <ShareIcon /> <b>Share</b> in Safari's toolbar</>}.
-          </li>
-          <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
-          <li>Make sure <b>Open as Web App</b> is on, then tap <b>Add</b>.</li>
-        </ol>
-        {canShare && (
-          <>
-            <div class="actions wrap">
-              <button class="primary" onClick={openShare}><ShareIcon /> Share…</button>
-            </div>
-            <p class="muted small">
-              No "Add to Home Screen" in that menu? Use <ShareIcon /> Share in Safari's toolbar instead.
-            </p>
-          </>
-        )}
-      </>
+      <ol class="steps">
+        <li>Tap <ShareIcon /> <b>Share</b> in Safari's toolbar.</li>
+        <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+        <li>Make sure <b>Open as Web App</b> is on, then tap <b>Add</b>.</li>
+      </ol>
     );
   }
   return (
@@ -101,7 +86,7 @@ export function InstallSteps() {
 
 /** Settings card: hidden once the app runs installed. */
 export function InstallCard() {
-  if (isStandalone()) return null;
+  if (isStandalone() || !isMobile()) return null;
   return (
     <section class="card install">
       <h3 class="section-title">Install on this phone</h3>
@@ -116,7 +101,7 @@ export function InstallBanner() {
   const [dismissed, setDismissed] = useState(() => {
     try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch { return false; }
   });
-  if (dismissed || isStandalone() || !(canPrompt || isIOS())) return null;
+  if (dismissed || isStandalone() || !isMobile() || !(canPrompt || isIOS())) return null;
   return (
     <section class="card install">
       <div class="row">
