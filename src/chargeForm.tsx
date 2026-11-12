@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { getState, remove, save, updateSettings } from './store';
 import { uid, type Charge, type Meter } from './types';
-import { Field, fromLocalInput, money, n2s, num, NumInput, parseNum, toLocalInput } from './ui';
+import { currencySymbol, Field, fromLocalInput, money, n2s, num, NumInput, parseNum, toLocalInput } from './ui';
 
 export type Mode = 'start' | 'finish' | 'log' | 'edit';
 
@@ -57,11 +57,11 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const [kwh, setKwh] = useState(n2s(c0.kwh));
   const [price, setPrice] = useState(n2s(c0.pricePerKwh));
   const [cost, setCost] = useState(n2s(c0.cost));
-  // Home meters are usually billed per kWh; public chargers often just give a total.
-  const [priceMode, setPriceMode] = useState<'kwh' | 'total'>(
-    c0.cost != null ? 'total' : mode === 'edit' || c0.meterId ? 'kwh' : 'total',
+  // Meters are always billed per kWh. Public chargers often just give a total, so they get a
+  // toggle defaulting to Total (also shown for older meter charges that were saved with a total).
+  const [toggleMode, setToggleMode] = useState<'kwh' | 'total'>(
+    c0.cost == null && c0.pricePerKwh != null && mode === 'edit' ? 'kwh' : 'total',
   );
-  const [priceModeTouched, setPriceModeTouched] = useState(mode === 'edit');
   const [odo, setOdo] = useState(n2s(c0.odometerKm));
   const [notes, setNotes] = useState(c0.notes);
   const [error, setError] = useState('');
@@ -69,6 +69,9 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const meter: Meter | undefined = meters.find((m) => m.id === meterId);
   const vehicle = vehicles.find((v) => v.id === vehicleId);
   const showEnd = mode !== 'start';
+  const showToggle = meterId === OTHER || c0.cost != null;
+  const priceMode = showToggle ? toggleMode : 'kwh';
+  const cur = currencySymbol();
 
   const ms = parseNum(meterStart);
   const me = parseNum(meterEnd);
@@ -94,7 +97,6 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
     if (id === meterId) return;
     setMeterId(id);
     if (id && mode !== 'edit') setMeterStart(n2s(previousMeterEnd(id, c0.id)));
-    if (!priceModeTouched) setPriceMode(id ? 'kwh' : 'total');
   }
 
   function submit(e: Event) {
@@ -209,27 +211,24 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
             <Field
               label="Price"
               wide
-              hint={priceMode === 'kwh'
-                ? (defaultPrice != null && !price ? 'current meter rate' : 'per kWh')
-                : 'total paid for this charge'}
+              hint={priceMode === 'total' ? 'total paid for this charge' : defaultPrice != null && !price ? 'current meter rate' : undefined}
             >
               <div class="price-row">
-                <div class="seg" role="group" aria-label="Price type">
-                  {(['kwh', 'total'] as const).map((pm) => (
-                    <button
-                      type="button"
-                      class={priceMode === pm ? 'on' : ''}
-                      aria-pressed={priceMode === pm}
-                      onClick={() => { setPriceMode(pm); setPriceModeTouched(true); }}
-                    >
-                      {pm === 'kwh' ? '/kWh' : 'Total'}
-                    </button>
-                  ))}
-                </div>
                 {priceMode === 'kwh' ? (
                   <NumInput value={price} onInput={setPrice} placeholder={defaultPrice != null ? String(defaultPrice) : '0.00'} />
                 ) : (
                   <NumInput value={cost} onInput={setCost} placeholder="0.00" />
+                )}
+                {showToggle ? (
+                  <div class="seg" role="group" aria-label="Price type">
+                    {(['total', 'kwh'] as const).map((pm) => (
+                      <button type="button" class={priceMode === pm ? 'on' : ''} aria-pressed={priceMode === pm} onClick={() => setToggleMode(pm)}>
+                        {pm === 'kwh' ? `${cur}/kWh` : `${cur} Total`}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <span class="unit">{cur}/kWh</span>
                 )}
               </div>
             </Field>

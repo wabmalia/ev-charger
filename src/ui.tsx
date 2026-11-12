@@ -15,6 +15,15 @@ export function money(n: number | null | undefined, digits = 2, maxDigits = digi
   }
 }
 
+export function currencySymbol(): string {
+  try {
+    const parts = new Intl.NumberFormat(undefined, { style: 'currency', currency: getState().settings.currency || 'EUR' }).formatToParts(0);
+    return parts.find((p) => p.type === 'currency')?.value ?? getState().settings.currency;
+  } catch {
+    return getState().settings.currency;
+  }
+}
+
 export function num(n: number | null | undefined, digits = 1, unit = ''): string {
   if (n == null || !Number.isFinite(n)) return '–';
   const s = n.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: 0 });

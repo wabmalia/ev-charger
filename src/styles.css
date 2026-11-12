@@ -201,3 +201,4 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .price-row .seg { flex: none; }
 .price-row .seg button { padding: 0 14px; font-size: 14px; }
 .price-row input { flex: 1; }
+.price-row .unit { flex: none; align-self: center; font-weight: 600; color: var(--text-2); padding: 0 4px; min-width: 64px; }
