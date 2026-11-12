@@ -55,14 +55,19 @@ export function App() {
     return () => clearInterval(t);
   }, []);
 
+  // No connection (garage, no signal) is normal: changes stay on the phone and sync later.
+  const [offline, setOffline] = useState(!navigator.onLine);
   async function runSync() {
     if (!getState().settings.spreadsheetId || !token()) return;
+    if (!navigator.onLine) return setOffline(true);
     setSyncing(true);
     try {
       await sync();
       setSyncError('');
+      setOffline(false);
     } catch (e) {
-      setSyncError(isAuthError(e) ? 'Google session expired. Sign in again in Settings.' : String((e as Error).message));
+      if (e instanceof TypeError) setOffline(true); // fetch failed: no network
+      else setSyncError(isAuthError(e) ? 'Google session expired. Sign in again in Settings.' : String((e as Error).message));
     }
     setSyncing(false);
   }
@@ -72,22 +77,33 @@ export function App() {
     runSync();
     const vis = () => document.visibilityState === 'visible' && runSync();
     document.addEventListener('visibilitychange', vis);
-    addEventListener('online', runSync);
+    const goOnline = () => { setOffline(false); runSync(); };
+    const goOffline = () => setOffline(true);
+    addEventListener('online', goOnline);
+    addEventListener('offline', goOffline);
     return () => {
       document.removeEventListener('visibilitychange', vis);
-      removeEventListener('online', runSync);
+      removeEventListener('online', goOnline);
+      removeEventListener('offline', goOffline);
     };
   }, []);
 
   const pending = pendingCount(s);
   const connected = !!s.settings.spreadsheetId;
   const status = !connected ? 'Local only'
+    : offline ? (pending ? `Offline · ${pending} pending` : 'Offline')
     : syncing ? 'Syncing…'
     : syncError ? 'Sync issue'
     : !token() ? 'Sign in to sync'
     : pending ? `${pending} pending` : 'Synced';
   // Outside Settings the pill only appears when sync needs attention or is working.
   const needsAttention = connected && (syncing || !!syncError || !token() || pending > 0);
+  const statusClass = offline ? 'offline' : syncError || (connected && !token()) ? 'bad' : syncing ? 'busy' : '';
+  const statusPill = (
+    <button class={`status ${statusClass}`} onClick={() => (connected && token() ? runSync() : go('setup'))}>
+      {status}
+    </button>
+  );
   const showStatus = view === 'setup' || needsAttention;
 
   const hasVehicle = s.data.vehicles.some((v) => !v.deleted);
@@ -114,20 +130,23 @@ export function App() {
   return (
     <div class={showBar ? 'app with-bar' : 'app'}>
       <header class="topbar">
-        {view === 'home' ? (
-          <h1>EV Charger</h1>
-        ) : (
-          <button class="back" onClick={() => go('home')} aria-label="Back">‹ <span>{TITLES[view]}</span></button>
-        )}
-        <div class="top-actions">
-          {showStatus && (
-            <button class={`status ${syncError || (connected && !token()) ? 'bad' : syncing ? 'busy' : ''}`} onClick={() => (connected && token() ? runSync() : go('setup'))}>
-              {status}
-            </button>
+        <div class="top-row">
+          {view === 'home' ? (
+            <h1 class="brand"><img src="./icon.svg" alt="" width="30" height="30" /> EV Charger</h1>
+          ) : (
+            <button class="back" onClick={() => go('home')} aria-label="Back">‹ <span>{TITLES[view]}</span></button>
           )}
-          {view !== 'setup' && (
-            <button class="settings-btn" onClick={() => go('setup')}>
-              <span aria-hidden="true">⚙</span> Settings
+          {view === 'setup' ? (
+            statusPill
+          ) : (
+            // One button into Settings: it shows the sync status instead of "Settings" when
+            // something needs attention (offline, pending, sign in, error).
+            <button
+              class={showStatus ? `settings-btn status ${statusClass}` : 'settings-btn'}
+              onClick={() => go('setup')}
+              aria-label={showStatus ? `Settings: ${status}` : 'Settings'}
+            >
+              <span aria-hidden="true">⚙</span> {showStatus ? status : 'Settings'}
             </button>
           )}
         </div>

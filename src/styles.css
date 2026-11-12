@@ -307,3 +307,14 @@ input[type='date']::-webkit-date-and-time-value, input[type='time']::-webkit-dat
 .primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .actions .missing { align-self: center; margin-right: auto; text-align: left; }
 .actions > .danger + .missing { margin-right: 0; margin-left: auto; text-align: right; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand img { width: 28px; height: 28px; border-radius: 7px; flex: none; }
+.status.offline { color: var(--text-2); border-style: dashed; }
+.topbar { flex-direction: column; align-items: stretch; gap: 6px; }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.brand { white-space: nowrap; }
+.brand img { width: 30px; height: 30px; }
+.status { white-space: nowrap; }
+.settings-btn.status { padding: 4px 12px; font-size: 13px; }
+.settings-btn.status.bad { color: var(--danger); border-color: var(--danger); }
+.settings-btn.status.offline span, .settings-btn.status.bad span { color: inherit; }
