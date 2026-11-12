@@ -169,7 +169,10 @@ function SyncCard(props: { onSync: () => void; error: string }) {
 
   return (
     <section class="card">
-      <h3 class="section-title">Sync with Google Sheets</h3>
+      <div class="row">
+        <h3 class="section-title">Sync with Google Sheets</h3>
+        {signedIn && spreadsheetId && <button class="link" onClick={props.onSync}>↻ Sync now</button>}
+      </div>
       {!signedIn ? (
         <>
           <p class="muted small">
@@ -217,11 +220,13 @@ function SyncCard(props: { onSync: () => void; error: string }) {
               try { await navigator.clipboard.writeText(sheetUrl(spreadsheetId)); setMsg('Sheet link copied. Share the sheet with them in Google (Editor), then they paste this link in Settings.'); }
               catch { setMsg(sheetUrl(spreadsheetId)); }
             }}>Copy sheet link</button>
-            <button class="primary" onClick={props.onSync}>Sync now</button>
           </div>
           <div class="actions wrap">
-            <button class="link" onClick={() => { if (confirm('Disconnect this sheet? Local data is kept.')) updateSettings({ spreadsheetId: null }); }}>Disconnect sheet</button>
-            <button class="link" onClick={() => { signOut(); updateSettings({}); }}>Sign out</button>
+            <button class="link danger" onClick={() => {
+              if (!confirm('Disconnect from this sheet and sign out of Google? Data on this phone is kept, and the sheet is not touched.')) return;
+              signOut();
+              updateSettings({ spreadsheetId: null });
+            }}>Disconnect</button>
           </div>
         </>
       )}
