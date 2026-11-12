@@ -1,18 +1,15 @@
 import { useEffect, useState } from 'preact/hooks';
+import { ChargeForm, newCharge } from './chargeForm';
 import { handleRedirect, isAuthError, sync, token } from './google';
 import { History } from './history';
-import { Home } from './home';
+import { Home, type FormState } from './home';
 import { Setup } from './setup';
 import { Stats } from './stats';
 import { getState, onScheduleSync, pendingCount, updateSettings, useStore } from './store';
+import { Sheet } from './ui';
 
-type Tab = 'home' | 'history' | 'stats' | 'setup';
-const TABS: [Tab, string, string][] = [
-  ['home', 'Charge', '⚡'],
-  ['history', 'History', '☰'],
-  ['stats', 'Stats', '▤'],
-  ['setup', 'Setup', '⚙'],
-];
+type View = 'home' | 'history' | 'stats' | 'setup';
+const TITLES: Record<View, string> = { home: 'EV Charger', history: 'History', stats: 'Stats', setup: 'Settings' };
 
 // Runs once on load: OAuth redirect result and ?sheet= invite links.
 const bootError = handleRedirect();
@@ -27,9 +24,28 @@ if (invite) {
 
 export function App() {
   const s = useStore();
-  const [tab, setTab] = useState<Tab>(() => (bootError || invite ? 'setup' : 'home'));
+  const [view, setView] = useState<View>(() => (bootError || invite ? 'setup' : 'home'));
+  const [form, setForm] = useState<FormState | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState(bootError ?? '');
+
+  // Sub-screens push a history entry so the phone's back gesture returns home.
+  function go(v: View) {
+    if (v === view) return;
+    if (v === 'home') return history.back();
+    history.pushState({ view: v }, '');
+    setView(v);
+    scrollTo(0, 0);
+  }
+  useEffect(() => {
+    const pop = (e: PopStateEvent) => setView((e.state as { view?: View } | null)?.view ?? 'home');
+    addEventListener('popstate', pop);
+    if (view !== 'home') {
+      history.replaceState(null, '');
+      history.pushState({ view }, '');
+    }
+    return () => removeEventListener('popstate', pop);
+  }, []);
 
   async function runSync() {
     if (!getState().settings.spreadsheetId || !token()) return;
@@ -38,7 +54,7 @@ export function App() {
       await sync();
       setSyncError('');
     } catch (e) {
-      setSyncError(isAuthError(e) ? 'Google session expired. Sign in again in Setup.' : String((e as Error).message));
+      setSyncError(isAuthError(e) ? 'Google session expired. Sign in again in Settings.' : String((e as Error).message));
     }
     setSyncing(false);
   }
@@ -63,28 +79,68 @@ export function App() {
     : !token() ? 'Signed out'
     : pending ? `${pending} pending` : 'Synced';
 
+  const hasVehicle = s.data.vehicles.some((v) => !v.deleted);
+  const active = s.data.charges
+    .filter((c) => !c.deleted && c.status === 'active')
+    .sort((a, b) => b.startedAt - a.startedAt);
+  const showBar = hasVehicle && view !== 'setup';
+
+  // Start defaults to a car that isn't already charging.
+  function startCharge() {
+    const c = newCharge();
+    const busy = new Set(active.map((a) => a.vehicleId));
+    if (busy.has(c.vehicleId)) {
+      const free = s.data.vehicles.find((v) => !v.deleted && !busy.has(v.id));
+      if (free) c.vehicleId = free.id;
+    }
+    setForm({ mode: 'start', charge: c });
+  }
+
   return (
-    <div class="app">
+    <div class={showBar ? 'app with-bar' : 'app'}>
       <header class="topbar">
-        <h1>EV Charger</h1>
-        <button class={`status ${syncError ? 'bad' : syncing ? 'busy' : ''}`} onClick={() => (connected && token() ? runSync() : setTab('setup'))}>
-          {status}
-        </button>
+        {view === 'home' ? (
+          <h1>EV Charger</h1>
+        ) : (
+          <button class="back" onClick={() => go('home')} aria-label="Back">‹ <span>{TITLES[view]}</span></button>
+        )}
+        <div class="top-actions">
+          <button class={`status ${syncError ? 'bad' : syncing ? 'busy' : ''}`} onClick={() => (connected && token() ? runSync() : go('setup'))}>
+            {status}
+          </button>
+          {view !== 'setup' && <button class="icon gear" aria-label="Settings" onClick={() => go('setup')}>⚙</button>}
+        </div>
       </header>
       <main>
-        {tab === 'home' && <Home />}
-        {tab === 'history' && <History />}
-        {tab === 'stats' && <Stats />}
-        {tab === 'setup' && <Setup onSync={runSync} syncError={syncError} />}
+        {view === 'home' && <Home openForm={setForm} startAnother={startCharge} go={go} />}
+        {view === 'history' && <History />}
+        {view === 'stats' && <Stats />}
+        {view === 'setup' && <Setup onSync={runSync} syncError={syncError} />}
       </main>
-      <nav class="tabbar">
-        {TABS.map(([id, label, icon]) => (
-          <button class={tab === id ? 'on' : ''} onClick={() => setTab(id)} aria-current={tab === id ? 'page' : undefined}>
-            <span class="tab-icon" aria-hidden="true">{icon}</span>
-            <span>{label}</span>
+
+      {showBar && (
+        <nav class="actionbar" aria-label="Charge actions">
+          {active.length ? (
+            <button class="primary main live-btn" onClick={() => setForm({ mode: 'finish', charge: active[0]! })}>
+              <span class="pulse small" aria-hidden="true" /> Finish charging
+            </button>
+          ) : (
+            <button class="primary main" onClick={startCharge}>⚡ Start charge</button>
+          )}
+          <button class="secondary side" onClick={() => setForm({ mode: 'log', charge: { ...newCharge(), status: 'done' } })}>
+            + Log
           </button>
-        ))}
-      </nav>
+        </nav>
+      )}
+
+      {form && (
+        <Sheet
+          title={{ start: 'Start a charge', finish: 'Finish charging', log: 'Log a past charge', edit: 'Edit charge' }[form.mode]}
+          onClose={() => setForm(null)}
+        >
+          <ChargeForm mode={form.mode} charge={form.charge} onDone={() => setForm(null)} />
+        </Sheet>
+      )}
     </div>
   );
 }

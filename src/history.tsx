@@ -23,7 +23,7 @@ export function History() {
     groups.at(-1)!.items.push(c);
   }
 
-  if (!charges.length && !vehicle) return <p class="empty">No charges yet. Start or log one from the Charge tab.</p>;
+  if (!charges.length && !vehicle) return <p class="empty">No charges yet. Start or log one with the buttons below.</p>;
 
   return (
     <div class="stack">
