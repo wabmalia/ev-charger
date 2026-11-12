@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="EV Charger is a free web app to log electric car charges and track cost, energy and consumption, with optional sync to your own Google Sheet." />
+  <title>EV Charger · Log your electric car charges</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./legal.css" />
+</head>
+<body>
+<main>
+  <header class="hero">
+    <img src="./icon-192.png" alt="" width="72" height="72" />
+    <div>
+      <h1>EV Charger</h1>
+      <p class="muted">Log your electric car charges. Free, no account needed.</p>
+    </div>
+  </header>
+
+  <p><a class="cta" href="./">Open the app</a></p>
+
+  <h2>What it does</h2>
+  <p>EV Charger is a small web app you can install on your phone's home screen. It replaces a messy
+  spreadsheet for tracking home and public charging of an electric car.</p>
+  <ul>
+    <li>Start and stop a charge with one tap, or log one afterwards with start/end battery %, kWh,
+      meter readings, price and odometer.</li>
+    <li>Keep track of your electricity meters: the latest reading and price per kWh become defaults for the next charge.</li>
+    <li>See a dashboard with cost, energy, consumption per 100 km and charging efficiency.</li>
+    <li>Works offline. Export your data to CSV or a JSON backup at any time.</li>
+  </ul>
+
+  <h2>No sign-in required</h2>
+  <p>Everything is stored on your device by default. You never need an account to use the app.</p>
+
+  <h2>Optional Google Sheets sync</h2>
+  <p>If you want your log on more than one phone, or shared with someone in your household, you can
+  sign in with Google and connect a Google Sheet. The app then:</p>
+  <ul>
+    <li>creates a spreadsheet in your Google account (or uses one you choose) with
+      <code>Vehicles</code>, <code>Meters</code> and <code>Charges</code> tabs;</li>
+    <li>reads and writes your charge records in that one spreadsheet, and nothing else;</li>
+    <li>uses your Google email only on your device, to renew the sign-in without asking you again.</li>
+  </ul>
+  <p>The app has no server. Your data goes straight from your browser to Google and is never sent to the
+  developer or anyone else. Details are in the <a href="./privacy.html">Privacy Policy</a>.</p>
+
+  <h2>Open source</h2>
+  <p>The source code is on <a href="https://github.com/wabmalia/ev-charger">GitHub</a>.</p>
+
+  <p class="muted footer">
+    <a href="./privacy.html">Privacy Policy</a> · <a href="./terms.html">Terms of Service</a> ·
+    <a href="https://github.com/wabmalia/ev-charger/issues">Contact</a>
+  </p>
+</main>
+</body>
+</html>
