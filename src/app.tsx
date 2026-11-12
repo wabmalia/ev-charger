@@ -76,8 +76,11 @@ export function App() {
   const status = !connected ? 'Local only'
     : syncing ? 'Syncing…'
     : syncError ? 'Sync issue'
-    : !token() ? 'Signed out'
+    : !token() ? 'Sign in to sync'
     : pending ? `${pending} pending` : 'Synced';
+  // Outside Settings the pill only appears when sync needs attention or is working.
+  const needsAttention = connected && (syncing || !!syncError || !token() || pending > 0);
+  const showStatus = view === 'setup' || needsAttention;
 
   const hasVehicle = s.data.vehicles.some((v) => !v.deleted);
   const active = s.data.charges
@@ -105,10 +108,16 @@ export function App() {
           <button class="back" onClick={() => go('home')} aria-label="Back">‹ <span>{TITLES[view]}</span></button>
         )}
         <div class="top-actions">
-          <button class={`status ${syncError ? 'bad' : syncing ? 'busy' : ''}`} onClick={() => (connected && token() ? runSync() : go('setup'))}>
-            {status}
-          </button>
-          {view !== 'setup' && <button class="icon gear" aria-label="Settings" onClick={() => go('setup')}>⚙</button>}
+          {showStatus && (
+            <button class={`status ${syncError || (connected && !token()) ? 'bad' : syncing ? 'busy' : ''}`} onClick={() => (connected && token() ? runSync() : go('setup'))}>
+              {status}
+            </button>
+          )}
+          {view !== 'setup' && (
+            <button class="settings-btn" onClick={() => go('setup')}>
+              <span aria-hidden="true">⚙</span> Settings
+            </button>
+          )}
         </div>
       </header>
       <main>

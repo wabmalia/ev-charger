@@ -55,7 +55,9 @@ h1, h2, h3 { margin: 0; }
 main { padding: 4px 16px 16px; }
 
 .top-actions { display: flex; align-items: center; gap: 4px; }
-.gear { font-size: 22px; }
+.settings-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--text); }
+.settings-btn span { font-size: 15px; color: var(--text-2); }
+.top-actions { gap: 8px; }
 .back { background: none; border: 0; font-size: 20px; font-weight: 700; padding: 4px 0; display: flex; align-items: center; gap: 6px; color: var(--text); }
 .back span { font-size: 20px; }
 .app.with-bar { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
