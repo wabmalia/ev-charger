@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'preact/hooks';
+import { ChargeCard } from './chargeCard';
 import { ChargeForm, type Mode } from './chargeForm';
 import { computeMetrics } from './metrics';
 import { InstallBanner } from './install';
 import { MeterForm, VehicleForm } from './setup';
 import { useStore } from './store';
 import { chargeCost, sortKey, type Charge } from './types';
-import { dateLabel, duration, EditTag, money, num, PencilIcon, Sheet, timeLabel } from './ui';
+import { duration, EditTag, money, num, PencilIcon, Sheet, timeLabel } from './ui';
 
 export interface FormState { mode: Mode; charge: Charge }
 
@@ -103,27 +104,16 @@ export function Home(props: {
           {done.length > 0 && <button class="link" onClick={() => props.go('history')}>History ›</button>}
         </div>
         {done.length ? (
-          <ul class="list">
+          <div class="cards">
             {done.slice(0, 3).map((c) => (
-              <li>
-                <button class="list-row" onClick={() => setEdit(c)}>
-                  <div>
-                    <div class="row-title">{dateLabel(c.startedAt)}</div>
-                    <div class="muted small">
-                      {where(c)}
-                      {vehicles.length > 1 && ` · ${vName(c.vehicleId)}`}
-                      {c.startPct != null && c.endPct != null && ` · ${c.startPct}→${c.endPct}%`}
-                    </div>
-                  </div>
-                  <div class="right">
-                    <div class="row-title">{num(c.kwh, 2, 'kWh')}</div>
-                    <div class="muted small">{money(chargeCost(c))}</div>
-                  </div>
-                  <EditTag />
-                </button>
-              </li>
+              <ChargeCard
+                charge={c}
+                where={where(c)}
+                car={vehicles.length > 1 ? vName(c.vehicleId) : undefined}
+                onEdit={() => setEdit(c)}
+              />
             ))}
-          </ul>
+          </div>
         ) : (
           <p class="muted small">No charges yet. Use the buttons below to start or log one.</p>
         )}
@@ -151,8 +141,7 @@ function MeterBoard() {
       <div class="meters">
         {meters.map((x) => (
           <button class="meter" onClick={() => setEdit(x.id)}>
-            <EditTag />
-            <span class="meter-name">{x.name}</span>
+            <span class="meter-head"><span class="meter-name">{x.name}</span><EditTag /></span>
             <span class="meter-reading">{x.lastReading != null ? num(x.lastReading, 2) : '–'}<small> kWh</small></span>
             <span class="muted">{x.pricePerKwh != null ? `${money(x.pricePerKwh, 2, 4)} / kWh` : 'no price set'}</span>
           </button>

@@ -241,3 +241,20 @@ details summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .meter { position: relative; }
 .meter .edit-tag { position: absolute; top: 10px; right: 10px; padding: 2px 8px; font-size: 12px; }
 .edit-link { display: inline-flex; align-items: center; gap: 4px; }
+.cards { display: flex; flex-direction: column; gap: 10px; }
+.charge-card {
+  width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+}
+.cc-head, .meter-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cc-date { font-weight: 600; }
+.cc-main { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cc-kwh, .cc-cost { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cc-kwh small { font-size: 13px; font-weight: 400; color: var(--text-2); }
+.cc-battery { display: flex; align-items: center; gap: 10px; }
+.cc-bar { position: relative; flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.cc-fill { position: absolute; top: 0; bottom: 0; background: var(--bar); border-radius: 4px; }
+.cc-pct { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; flex: none; }
+.cc-meta:empty { display: none; }
+.meter-head .meter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meter .meter-head .edit-tag { position: static; }

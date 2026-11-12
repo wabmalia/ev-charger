@@ -1,9 +1,10 @@
 import { useState } from 'preact/hooks';
+import { ChargeCard } from './chargeCard';
 import { ChargeForm } from './chargeForm';
 import { monthKey } from './metrics';
 import { useStore } from './store';
 import { chargeCost, sortKey, type Charge } from './types';
-import { dateLabel, duration, EditTag, money, num, Sheet } from './ui';
+import { money, num, Sheet } from './ui';
 
 export function History() {
   const { data } = useStore();
@@ -45,28 +46,16 @@ export function History() {
               <span>{label}</span>
               <span class="muted">{num(kwh, 1, 'kWh')} · {money(cost)}</span>
             </h3>
-            <ul class="list">
+            <div class="cards">
               {g.items.map((c) => (
-                <li>
-                  <button class="list-row" onClick={() => setEdit(c)}>
-                    <div>
-                      <div class="row-title">{dateLabel(c.startedAt)}</div>
-                      <div class="muted small">
-                        {where(c)}
-                        {vehicles.length > 1 && ` · ${vName(c.vehicleId)}`}
-                        {c.startPct != null && c.endPct != null && ` · ${c.startPct}→${c.endPct}%`}
-                        {c.startedAt != null && c.endedAt != null && ` · ${duration(c.endedAt - c.startedAt)}`}
-                      </div>
-                    </div>
-                    <div class="right">
-                      <div class="row-title">{num(c.kwh, 2, 'kWh')}</div>
-                      <div class="muted small">{money(chargeCost(c))}</div>
-                    </div>
-                    <EditTag />
-                  </button>
-                </li>
+                <ChargeCard
+                  charge={c}
+                  where={where(c)}
+                  car={vehicles.length > 1 ? vName(c.vehicleId) : undefined}
+                  onEdit={() => setEdit(c)}
+                />
               ))}
-            </ul>
+            </div>
           </section>
         );
       })}
