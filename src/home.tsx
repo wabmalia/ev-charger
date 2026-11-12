@@ -96,7 +96,7 @@ function MeterBoard() {
           <button class="meter" onClick={() => setEdit(x.id)}>
             <span class="meter-name">{x.name}</span>
             <span class="meter-reading">{x.lastReading != null ? num(x.lastReading, 2) : '–'}<small> kWh</small></span>
-            <span class="muted">{x.pricePerKwh != null ? `${money(x.pricePerKwh, 3)} / kWh` : 'no price set'}</span>
+            <span class="muted">{x.pricePerKwh != null ? `${money(x.pricePerKwh, 2, 4)} / kWh` : 'no price set'}</span>
           </button>
         ))}
       </div>

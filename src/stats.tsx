@@ -26,7 +26,7 @@ export function Stats() {
   const tiles: [string, string, string?][] = [
     ['Total spent', money(m.cost), `${m.count} charges`],
     ['Energy', num(m.kwh, 0, 'kWh'), m.avgKwh != null ? `${num(m.avgKwh, 1)} kWh / charge` : undefined],
-    ['Avg price', m.avgPrice != null ? money(m.avgPrice, 3) : '–', 'per kWh paid'],
+    ['Avg price', m.avgPrice != null ? money(m.avgPrice, 2, 4) : '–', 'per kWh paid'],
     ['Consumption', num(m.kwhPer100km, 1, 'kWh'), 'per 100 km'],
     ['Cost per 100 km', m.costPer100km != null ? money(m.costPer100km) : '–', m.kmDriven ? `${num(m.kmDriven, 0)} km tracked` : 'needs odometer on 2+ charges'],
     ['Charge every', m.avgDaysBetween != null ? `${num(m.avgDaysBetween, 1)} days` : '–', m.avgPctAdded != null ? `+${num(m.avgPctAdded, 0)}% on average` : undefined],
@@ -93,7 +93,7 @@ export function Stats() {
           <thead><tr><th>Month</th><th>Charges</th><th>kWh</th><th>Cost</th><th>per kWh</th></tr></thead>
           <tbody>
             {[...m.months].reverse().map((p) => (
-              <tr><td>{p.month}</td><td>{p.count}</td><td>{num(p.kwh, 1)}</td><td>{money(p.cost)}</td><td>{p.kwh ? money(p.cost / p.kwh, 3) : '–'}</td></tr>
+              <tr><td>{p.month}</td><td>{p.count}</td><td>{num(p.kwh, 1)}</td><td>{money(p.cost)}</td><td>{p.kwh ? money(p.cost / p.kwh, 2, 4) : '–'}</td></tr>
             ))}
           </tbody>
         </table>

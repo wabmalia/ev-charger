@@ -34,7 +34,7 @@ export function Setup(props: { onSync: () => void; syncError: string }) {
           {meters.map((m) => (
             <li><button class="list-row" onClick={() => setEditM(m)}>
               <span class="row-title">{m.name}</span>
-              <span class="muted small">{m.pricePerKwh != null ? `${money(m.pricePerKwh, 3)} / kWh` : 'no price'} · {m.lastReading != null ? num(m.lastReading, 2) : '–'} kWh</span>
+              <span class="muted small">{m.pricePerKwh != null ? `${money(m.pricePerKwh, 2, 4)} / kWh` : 'no price'} · {m.lastReading != null ? num(m.lastReading, 2) : '–'} kWh</span>
             </button></li>
           ))}
         </ul>

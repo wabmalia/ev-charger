@@ -2,15 +2,16 @@ import type { ComponentChildren } from 'preact';
 import { useEffect } from 'preact/hooks';
 import { getState } from './store';
 
-export function money(n: number | null | undefined, digits = 2): string {
+/** `maxDigits` > `digits` shows extra decimals only when present (e.g. kWh prices like 0.1675). */
+export function money(n: number | null | undefined, digits = 2, maxDigits = digits): string {
   if (n == null) return '–';
   try {
     return new Intl.NumberFormat(undefined, {
       style: 'currency', currency: getState().settings.currency || 'EUR',
-      minimumFractionDigits: digits, maximumFractionDigits: digits,
+      minimumFractionDigits: digits, maximumFractionDigits: maxDigits,
     }).format(n);
   } catch {
-    return n.toFixed(digits);
+    return n.toFixed(maxDigits);
   }
 }
 
