@@ -3,7 +3,6 @@ import {
   clientId, createSpreadsheet, parseSpreadsheetId, redirectUri, sheetUrl, signIn, signOut, token,
 } from './google';
 import { InstallCard } from './install';
-import { InviteSection } from './invite';
 import { rateHistory } from './metrics';
 import { getState, importData, markAllDirty, pendingCount, remove, save, updateSettings, useStore } from './store';
 import { chargeCost, uid, type Data, type Meter, type Vehicle } from './types';
@@ -186,8 +185,8 @@ function SyncCard(props: { onSync: () => void; error: string }) {
         <>
           <p class="signed-in">✓ Signed in with Google <button class="link" onClick={() => { signOut(); updateSettings({}); }}>Sign out</button></p>
           <p class="muted small">
-            Create a fresh sheet. If someone already set one up, ask them for the invite QR code or link
-            (Settings → Share with someone), or paste the sheet's link below.
+            Create a fresh sheet. If someone already set one up, ask them for the sheet link
+            (Settings → Copy sheet link) and paste it below.
           </p>
           <div class="actions">
             <button class="primary" disabled={busy} onClick={async () => {
@@ -214,13 +213,16 @@ function SyncCard(props: { onSync: () => void; error: string }) {
           </p>
           <div class="actions wrap">
             <a class="button ghost" href={sheetUrl(spreadsheetId)} target="_blank" rel="noopener">Open sheet</a>
+            <button class="ghost" onClick={async () => {
+              try { await navigator.clipboard.writeText(sheetUrl(spreadsheetId)); setMsg('Sheet link copied. Share the sheet with them in Google (Editor), then they paste this link in Settings.'); }
+              catch { setMsg(sheetUrl(spreadsheetId)); }
+            }}>Copy sheet link</button>
             <button class="primary" onClick={props.onSync}>Sync now</button>
           </div>
           <div class="actions wrap">
             <button class="link" onClick={() => { if (confirm('Disconnect this sheet? Local data is kept.')) updateSettings({ spreadsheetId: null }); }}>Disconnect sheet</button>
             <button class="link" onClick={() => { signOut(); updateSettings({}); }}>Sign out</button>
           </div>
-          <InviteSection spreadsheetId={spreadsheetId} />
         </>
       )}
       {(msg || props.error) && <p class={props.error ? 'error' : 'muted small'}>{props.error || msg}</p>}
