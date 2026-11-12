@@ -65,11 +65,11 @@ export function parseNum(s: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export function Field(props: { label: string; hint?: string; children: ComponentChildren; wide?: boolean }) {
+export function Field(props: { label: string; hint?: string; children: ComponentChildren; wide?: boolean; required?: boolean }) {
   return (
     <label class={props.wide ? 'field wide' : 'field'}>
       <span class="label-row">
-        <span class="label">{props.label}</span>
+        <span class="label">{props.label}{props.required && <span class="req" aria-label="required"> *</span>}</span>
         {props.hint && <span class="hint">{props.hint}</span>}
       </span>
       {props.children}

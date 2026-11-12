@@ -82,8 +82,10 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const priceMode = showToggle ? toggleMode : 'kwh';
   const cur = currencySymbol();
 
-  const ms = parseNum(meterStart);
-  const me = parseNum(meterEnd);
+  // Meter readings only apply while a meter is selected (they stay in the inputs if you switch back).
+  const onMeter = meterId !== OTHER;
+  const ms = onMeter ? parseNum(meterStart) : null;
+  const me = onMeter ? parseNum(meterEnd) : null;
   const meterKwh = ms != null && me != null && me >= ms ? Math.round((me - ms) * 1000) / 1000 : null;
   const sp = parseNum(startPct);
   const ep = parseNum(endPct);
@@ -101,6 +103,20 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const odoHint = lastOdometer(vehicleId);
   const prevEnd = meterId ? previousMeterEnd(meterId, c0.id) : null;
   const kwhShown = showEnd && showKwhField;
+
+  // Required fields (marked *). Save stays disabled until they're filled.
+  const needsStart = mode === 'start' || willBeActiveNow;
+  const needsMeter = showEnd && meterId !== OTHER && !showKwhField;
+  const missing = (() => {
+    const m: string[] = [];
+    if (!vehicleId) m.push('a car');
+    if (needsStart && !date) m.push('start date');
+    if (needsStart && !tStart) m.push('start time');
+    if (needsMeter && ms == null) m.push('meter at start');
+    if (needsMeter && me == null) m.push('meter at end');
+    if (showEnd && showKwhField && effKwh == null) m.push('kWh charged');
+    return m.length ? m.join(', ') : '';
+  })();
 
   function pickMeter(id: string) {
     if (id === meterId) return;
@@ -194,11 +210,11 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
 
         {meterId !== OTHER && (
           <>
-            <Field label="Meter at start" hint={prevEnd != null ? `prev ${num(prevEnd, 2)}` : undefined}>
+            <Field label="Meter at start" required={needsMeter} hint={prevEnd != null ? `prev ${num(prevEnd, 2)}` : undefined}>
               <NumInput value={meterStart} onInput={setMeterStart} placeholder="kWh" />
             </Field>
             {showEnd && (
-              <Field label="Meter at end" hint={meterKwh != null ? `= ${num(meterKwh, 2)} kWh` : undefined}>
+              <Field label="Meter at end" required={needsMeter} hint={meterKwh != null ? `= ${num(meterKwh, 2)} kWh` : undefined}>
                 <NumInput value={meterEnd} onInput={setMeterEnd} placeholder="kWh" />
               </Field>
             )}
@@ -210,6 +226,7 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
             {showKwhField && (
               <Field
                 label="kWh charged"
+                required={showEnd}
                 hint={batteryKwh != null ? `≈ ${num(batteryKwh)} in battery` : undefined}
               >
                 <NumInput value={kwh} onInput={setKwh} placeholder={meterKwh != null ? String(meterKwh) : 'kWh'} />
@@ -218,7 +235,7 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
             </>
         )}
         <Field label="Odometer (km)" wide={!kwhShown && showToggle} hint={odoHint != null ? `last: ${num(odoHint, 0)}` : undefined}>
-          <NumInput value={odo} onInput={setOdo} placeholder="optional" />
+          <NumInput value={odo} onInput={setOdo} placeholder="km" />
         </Field>
         {showEnd && (
           <>
@@ -250,14 +267,14 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
         )}
 
         <div class={showEnd ? 'when wide' : 'when two wide'}>
-          <Field label="Date" hint={mode === 'start' || willBeActiveNow ? undefined : 'optional'}>
+          <Field label="Start date" required={needsStart}>
             <input type="date" value={date} onInput={(e) => setDate((e.target as HTMLInputElement).value)} />
           </Field>
-          <Field label="Start">
+          <Field label="Start time" required={needsStart}>
             <input type="time" value={tStart} onInput={(e) => setTStart((e.target as HTMLInputElement).value)} />
           </Field>
           {showEnd && (
-            <Field label="End" hint={endsNextDay ? 'next day' : undefined}>
+            <Field label="End time" hint={endsNextDay ? 'next day' : undefined}>
               <input type="time" value={tEnd} onInput={(e) => setTEnd((e.target as HTMLInputElement).value)} />
             </Field>
           )}
@@ -265,7 +282,7 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
 
         {showNotes ? (
           <Field label="Notes" wide>
-            <input value={notes} onInput={(e) => setNotes((e.target as HTMLInputElement).value)} placeholder="optional" autoFocus={!c0.notes} />
+            <input value={notes} onInput={(e) => setNotes((e.target as HTMLInputElement).value)} autoFocus={!c0.notes} />
           </Field>
         ) : (
           <button type="button" class="link left wide" onClick={() => setShowNotes(true)}>+ Add note</button>
@@ -283,7 +300,8 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
       {error && <p class="error">{error}</p>}
       <div class="actions">
         {mode === 'edit' && <button type="button" class="ghost danger" onClick={del}>Delete</button>}
-        <button type="submit" class="primary">
+        {missing && <span class="muted small missing">Needs {missing}</span>}
+        <button type="submit" class="primary" disabled={!!missing}>
           {mode === 'start' ? 'Start charging' : mode === 'finish' ? 'Finish charge' : 'Save'}
         </button>
       </div>

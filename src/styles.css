@@ -303,3 +303,7 @@ input[type='date']::-webkit-date-and-time-value, input[type='time']::-webkit-dat
 .link.wide { grid-column: 1 / -1; justify-self: start; }
 .grid > .wide { grid-column: 1 / -1; }
 .price-row .unit { min-width: 0; }
+.req { color: var(--accent); font-weight: 700; }
+.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.actions .missing { align-self: center; margin-right: auto; text-align: left; }
+.actions > .danger + .missing { margin-right: 0; margin-left: auto; text-align: right; }
