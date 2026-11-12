@@ -68,9 +68,11 @@ export function parseNum(s: string): number | null {
 export function Field(props: { label: string; hint?: string; children: ComponentChildren; wide?: boolean }) {
   return (
     <label class={props.wide ? 'field wide' : 'field'}>
-      <span class="label">{props.label}</span>
+      <span class="label-row">
+        <span class="label">{props.label}</span>
+        {props.hint && <span class="hint">{props.hint}</span>}
+      </span>
       {props.children}
-      {props.hint && <span class="hint">{props.hint}</span>}
     </label>
   );
 }

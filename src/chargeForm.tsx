@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks';
 import { getState, remove, save, updateSettings } from './store';
 import { sortKey, uid, type Charge, type Meter } from './types';
-import { currencySymbol, Field, fromLocalInput, money, n2s, num, NumInput, parseNum, toLocalInput } from './ui';
+import { combineWhen, toDateInput, toTimeInput } from './when';
+import { currencySymbol, Field, money, n2s, num, NumInput, parseNum } from './ui';
 
 export type Mode = 'start' | 'finish' | 'log' | 'edit';
 
@@ -48,8 +49,12 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const [vehicleId, setVehicleId] = useState(c0.vehicleId);
   const [meterId, setMeterId] = useState(c0.meterId ?? OTHER);
   const [location, setLocation] = useState(c0.location);
-  const [startedAt, setStartedAt] = useState(toLocalInput(c0.startedAt));
-  const [endedAt, setEndedAt] = useState(toLocalInput(c0.endedAt ?? (mode === 'finish' || mode === 'log' ? Date.now() : null)));
+  // "When": one date plus optional start/end times. Finishing defaults the end time to now;
+  // logging a past charge defaults to today with no times.
+  const [date, setDate] = useState(toDateInput(c0.startedAt ?? (mode === 'log' ? Date.now() : null)));
+  const [tStart, setTStart] = useState(mode === 'log' ? '' : toTimeInput(c0.startedAt));
+  const [tEnd, setTEnd] = useState(toTimeInput(c0.endedAt ?? (mode === 'finish' ? Date.now() : null)));
+  const [showNotes, setShowNotes] = useState(!!c0.notes);
   const [startPct, setStartPct] = useState(n2s(c0.startPct));
   const [endPct, setEndPct] = useState(n2s(c0.endPct));
   const [meterStart, setMeterStart] = useState(n2s(c0.meterStart));
@@ -69,6 +74,7 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
   const meter: Meter | undefined = meters.find((m) => m.id === meterId);
   const vehicle = vehicles.find((v) => v.id === vehicleId);
   const showEnd = mode !== 'start';
+  const willBeActiveNow = mode === 'edit' && c0.status === 'active';
   const showToggle = meterId === OTHER || c0.cost != null;
   const priceMode = showToggle ? toggleMode : 'kwh';
   const cur = currencySymbol();
@@ -101,8 +107,9 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
 
   function submit(e: Event) {
     e.preventDefault();
-    const start = fromLocalInput(startedAt);
-    const end = showEnd ? fromLocalInput(endedAt) : null;
+    const when = combineWhen(date, tStart, showEnd ? tEnd : '');
+    const start = when.startedAt;
+    const end = when.endedAt;
     if (!vehicleId) return setError('Pick a car first.');
     const willBeActive = mode === 'start' || (mode === 'edit' && c0.status === 'active' && end == null);
     // Dates are optional for logged charges; a running charge needs its start for the timer.
@@ -184,11 +191,11 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
 
         {meterId !== OTHER && (
           <>
-            <Field label="Meter at start" hint={prevEnd != null ? `previous end: ${num(prevEnd, 2)}` : undefined}>
+            <Field label="Meter at start" hint={prevEnd != null ? `prev ${num(prevEnd, 2)}` : undefined}>
               <NumInput value={meterStart} onInput={setMeterStart} placeholder="kWh" />
             </Field>
             {showEnd && (
-              <Field label="Meter at end" hint={meterKwh != null ? `= ${num(meterKwh, 2)} kWh charged` : undefined}>
+              <Field label="Meter at end" hint={meterKwh != null ? `= ${num(meterKwh, 2)} kWh` : undefined}>
                 <NumInput value={meterEnd} onInput={setMeterEnd} placeholder="kWh" />
               </Field>
             )}
@@ -200,22 +207,22 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
             {showKwhField && (
               <Field
                 label="kWh charged"
-                hint={batteryKwh != null ? `≈ ${num(batteryKwh)} kWh into the battery` : undefined}
+                hint={batteryKwh != null ? `≈ ${num(batteryKwh)} in battery` : undefined}
               >
                 <NumInput value={kwh} onInput={setKwh} placeholder={meterKwh != null ? String(meterKwh) : 'kWh'} />
               </Field>
             )}
             </>
         )}
-        <Field label="Odometer (km)" wide={!kwhShown} hint={odoHint != null ? `last: ${num(odoHint, 0)}` : undefined}>
+        <Field label="Odometer (km)" wide={!kwhShown && showToggle} hint={odoHint != null ? `last: ${num(odoHint, 0)}` : undefined}>
           <NumInput value={odo} onInput={setOdo} placeholder="optional" />
         </Field>
         {showEnd && (
           <>
             <Field
               label="Price"
-              wide
-              hint={priceMode === 'total' ? 'total paid for this charge' : defaultPrice != null && !price ? 'current meter rate' : undefined}
+              wide={showToggle}
+              hint={priceMode === 'total' ? 'total paid' : defaultPrice != null && !price ? 'meter rate' : undefined}
             >
               <div class="price-row">
                 {priceMode === 'kwh' ? (
@@ -239,18 +246,27 @@ export function ChargeForm(props: { mode: Mode; charge: Charge; onDone: () => vo
           </>
         )}
 
-        <Field label="Started" hint={mode === 'start' ? undefined : 'optional'} wide>
-          <input type="datetime-local" value={startedAt} onInput={(e) => setStartedAt((e.target as HTMLInputElement).value)} />
-        </Field>
-        {showEnd && (
-          <Field label="Finished" hint="optional" wide>
-            <input type="datetime-local" value={endedAt} onInput={(e) => setEndedAt((e.target as HTMLInputElement).value)} />
+        <div class={showEnd ? 'when wide' : 'when two wide'}>
+          <Field label="Date" hint={mode === 'start' || willBeActiveNow ? undefined : 'optional'}>
+            <input type="date" value={date} onInput={(e) => setDate((e.target as HTMLInputElement).value)} />
           </Field>
-        )}
+          <Field label="Start">
+            <input type="time" value={tStart} onInput={(e) => setTStart((e.target as HTMLInputElement).value)} />
+          </Field>
+          {showEnd && (
+            <Field label="End">
+              <input type="time" value={tEnd} onInput={(e) => setTEnd((e.target as HTMLInputElement).value)} />
+            </Field>
+          )}
+        </div>
 
-        <Field label="Notes" wide>
-          <input value={notes} onInput={(e) => setNotes((e.target as HTMLInputElement).value)} placeholder="optional" />
-        </Field>
+        {showNotes ? (
+          <Field label="Notes" wide>
+            <input value={notes} onInput={(e) => setNotes((e.target as HTMLInputElement).value)} placeholder="optional" autoFocus={!c0.notes} />
+          </Field>
+        ) : (
+          <button type="button" class="link left wide" onClick={() => setShowNotes(true)}>+ Add note</button>
+        )}
       </div>
 
       {showEnd && (
