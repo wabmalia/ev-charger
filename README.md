@@ -33,9 +33,8 @@ Apple developer account (CloudKit). Google works on iPhone too.
 4. **Credentials → Create credentials → OAuth client ID → Web application**:
    - Authorized JavaScript origins: `https://wabmalia.github.io`, `http://localhost:5173`
    - Authorized redirect URIs: `https://wabmalia.github.io/ev-charger/`, `http://localhost:5173/`
-5. Copy the client id and either:
-   - `gh variable set VITE_GOOGLE_CLIENT_ID --body "<id>.apps.googleusercontent.com"` and re-run the deploy, or
-   - paste it in the app under Setup (stored on that device only).
+5. Put the client id in `.env` (`VITE_GOOGLE_CLIENT_ID=...`). It is public, so it is committed.
+   It can also be overridden per device under Setup.
 
 Because the app stays in "Testing", Google shows an "unverified app" warning on
 sign-in; press Continue. Sign-in lasts about an hour, after that the app keeps
@@ -49,8 +48,6 @@ npm run dev      # http://localhost:5173
 npm test         # merge, row parsing and metrics tests
 npm run check    # typecheck
 ```
-
-Local client id: `VITE_GOOGLE_CLIENT_ID=... npm run dev` or paste it in Setup.
 
 Stack: Preact + TypeScript + Vite, hand-written service worker (`public/sw.js`),
 no backend. Pushing to `main` deploys to GitHub Pages.
