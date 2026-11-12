@@ -1,4 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#0f766e"/>
-  <path d="M286 72 136 292h104l-22 148 158-224H270z" fill="#fde68a"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- battery: body + terminal, kept inside the maskable safe zone -->
+  <rect x="166" y="136" width="180" height="270" rx="34" fill="none" stroke="#ffffff" stroke-width="26"/>
+  <rect x="216" y="104" width="80" height="34" rx="10" fill="#ffffff"/>
+  <!-- bolt -->
+  <path d="M276 172 200 284h52l-18 92 82-124h-54z" fill="#fde68a" stroke="#fde68a" stroke-width="10" stroke-linejoin="round"/>
 </svg>
