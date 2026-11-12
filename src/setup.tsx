@@ -296,6 +296,9 @@ function DataCard() {
           }} />
         </label>
       </div>
+      <p class="muted small legal-links">
+        <a href="./privacy.html">Privacy Policy</a> · <a href="./terms.html">Terms of Service</a>
+      </p>
     </section>
   );
 }

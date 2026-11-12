@@ -1,6 +1,6 @@
 // Offline support: network-first for pages, cache-first for hashed assets.
 // Google APIs are never cached.
-const CACHE = 'ev-charger-v3'; // bump when unhashed files (icons, manifest) change
+const CACHE = 'ev-charger-v4'; // bump when unhashed files (icons, manifest) change
 
 // Precache on install so the app opens offline after a single online visit: the page,
 // every script/stylesheet it references, the manifest and the icons.
@@ -35,14 +35,19 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || url.origin !== location.origin) return;
 
   if (req.mode === 'navigate') {
+    // Only the app itself is the cached shell; other pages (privacy.html, terms.html) are cached under their own URL.
+    const isApp = url.pathname === new URL('./', self.registration.scope).pathname || url.pathname.endsWith('/index.html');
+    const key = isApp ? './' : url.pathname;
     e.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('./', copy));
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(key, copy));
+          }
           return res;
         })
-        .catch(() => caches.match('./', { ignoreVary: true })),
+        .catch(() => caches.match(key, { ignoreVary: true }).then((hit) => hit || caches.match('./', { ignoreVary: true }))),
     );
     return;
   }

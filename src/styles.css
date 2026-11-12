@@ -318,3 +318,5 @@ input[type='date']::-webkit-date-and-time-value, input[type='time']::-webkit-dat
 .settings-btn.status { padding: 4px 12px; font-size: 13px; }
 .settings-btn.status.bad { color: var(--danger); border-color: var(--danger); }
 .settings-btn.status.offline span, .settings-btn.status.bad span { color: inherit; }
+.legal-links { margin: 14px 0 0; }
+.legal-links a { color: var(--text-2); }

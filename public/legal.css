@@ -1,0 +1,23 @@
+/* Privacy policy and terms pages: same "Workshop" palette as the app, dark only. */
+:root {
+  --bg: #0f1113;
+  --text: #eef0f2;
+  --text-2: #a3aab3;
+  --accent: #f5b301;
+  --surface: #181b1f;
+  color-scheme: dark;
+}
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.55 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+main { max-width: 680px; margin: 0 auto; padding: 24px 16px 48px; overflow-wrap: anywhere; }
+h1 { font-size: 28px; margin: 8px 0 4px; }
+h2 { font-size: 18px; margin: 28px 0 8px; }
+a { color: var(--accent); }
+code { background: var(--surface); padding: 1px 5px; border-radius: 4px; font-size: 14px; }
+ul { padding-left: 20px; }
+li { margin: 6px 0; }
+.muted { color: var(--text-2); }
