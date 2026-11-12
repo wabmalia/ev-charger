@@ -5,7 +5,7 @@ import { History } from './history';
 import { Home, type FormState } from './home';
 import { Setup } from './setup';
 import { Stats } from './stats';
-import { getState, onScheduleSync, pendingCount, updateSettings, useStore } from './store';
+import { confirmReplaceLocal, getState, onScheduleSync, pendingCount, connectSheet, useStore } from './store';
 import { sortKey } from './types';
 import { Sheet } from './ui';
 
@@ -18,8 +18,8 @@ const invite = new URLSearchParams(location.search).get('sheet');
 if (invite) {
   history.replaceState(null, '', location.pathname);
   const cur = getState().settings.spreadsheetId;
-  if (!cur || (cur !== invite && confirm('Switch to the shared sheet from this link?'))) {
-    updateSettings({ spreadsheetId: invite });
+  if (cur !== invite && (!cur || confirm('Switch to the shared sheet from this link?')) && confirmReplaceLocal()) {
+    connectSheet(invite, 'replace');
   }
 }
 

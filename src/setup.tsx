@@ -4,7 +4,7 @@ import {
 } from './google';
 import { InstallCard } from './install';
 import { rateHistory } from './metrics';
-import { getState, importData, markAllDirty, pendingCount, remove, save, updateSettings, useStore } from './store';
+import { confirmReplaceLocal, getState, importData, pendingCount, connectSheet, remove, save, updateSettings, useStore } from './store';
 import { chargeCost, sortKey, uid, type Data, type Meter, type Vehicle } from './types';
 import { Field, money, n2s, num, NumInput, parseNum, Sheet } from './ui';
 
@@ -145,9 +145,9 @@ function SyncCard(props: { onSync: () => void; error: string }) {
   const signedIn = !!token();
   const pending = pendingCount(s);
 
-  async function connect(id: string) {
-    updateSettings({ spreadsheetId: id });
-    markAllDirty();
+  function connect(id: string, mode: 'upload' | 'replace') {
+    if (mode === 'replace' && !confirmReplaceLocal()) return;
+    connectSheet(id, mode);
     props.onSync();
   }
 
@@ -194,17 +194,17 @@ function SyncCard(props: { onSync: () => void; error: string }) {
           <div class="actions">
             <button class="primary" disabled={busy} onClick={async () => {
               setBusy(true);
-              try { await connect(await createSpreadsheet()); } catch (e) { setMsg(String((e as Error).message)); }
+              try { connect(await createSpreadsheet(), 'upload'); } catch (e) { setMsg(String((e as Error).message)); }
               setBusy(false);
             }}>Create a new sheet</button>
           </div>
-          <Field label="…or use an existing sheet" wide>
+          <Field label="…or use an existing sheet" hint="Its data replaces what's on this phone. A new sheet keeps it instead." wide>
             <input value={link} onInput={(e) => setLink((e.target as HTMLInputElement).value)} placeholder="https://docs.google.com/spreadsheets/d/…" />
           </Field>
           <div class="actions">
             <button class="secondary" onClick={() => {
               const id = parseSpreadsheetId(link);
-              id ? connect(id) : setMsg("That doesn't look like a Google Sheets link.");
+              id ? connect(id, 'replace') : setMsg("That doesn't look like a Google Sheets link.");
             }}>Use this sheet</button>
           </div>
         </>

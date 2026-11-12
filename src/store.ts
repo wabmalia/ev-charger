@@ -103,6 +103,39 @@ export function markAllDirty() {
   });
 }
 
+/**
+ * Point this device at a sheet.
+ * - 'upload' (a sheet we just created): everything on this device is pushed to it.
+ * - 'replace' (an existing sheet): local data is dropped and the sheet's data is pulled in,
+ *   so the sheet stays the single source of truth.
+ */
+export function connectSheet(id: string, mode: 'upload' | 'replace') {
+  if (mode === 'replace') {
+    setState({
+      ...state,
+      data: structuredClone(empty.data),
+      dirty: structuredClone(empty.dirty),
+      settings: { ...state.settings, spreadsheetId: id, lastSyncAt: null, lastVehicleId: null, lastMeterId: null },
+    });
+  } else {
+    updateSettings({ spreadsheetId: id, lastSyncAt: null });
+    markAllDirty();
+  }
+}
+
+/** Confirm before an existing sheet replaces what's on this device (true = go ahead). */
+export function confirmReplaceLocal(): boolean {
+  const live = (list: { deleted: boolean }[]) => list.filter((r) => !r.deleted).length;
+  const charges = live(state.data.charges);
+  const other = live(state.data.vehicles) + live(state.data.meters);
+  if (!charges && !other) return true;
+  const what = charges ? `${charges} charge${charges === 1 ? '' : 's'}` : 'cars and meters';
+  return confirm(
+    `This phone has ${what} saved locally. Opening this sheet replaces them with the sheet's data.\n\n` +
+    'If you want to keep them, cancel and use Backup JSON first, or create a new sheet instead.',
+  );
+}
+
 export function pendingCount(s: State = state): number {
   return s.dirty.vehicles.length + s.dirty.meters.length + s.dirty.charges.length;
 }
