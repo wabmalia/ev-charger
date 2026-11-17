@@ -26,15 +26,17 @@ Apple developer account (CloudKit). Google works on iPhone too.
 ## Google OAuth setup (one time, free)
 
 1. https://console.cloud.google.com → create a project (e.g. "EV Charger").
-2. **APIs & Services → Library** → enable **Google Sheets API**.
+2. **APIs & Services → Library** → enable **Google Sheets API** and **Google Picker API**.
 3. **OAuth consent screen** (Google Auth Platform): External, app name "EV Charger",
    leave it in **Testing** and add every user's Gmail under **Test users** (max 100).
-   Data access: add the scope `.../auth/spreadsheets`.
+   Data access: add the scope `.../auth/drive.file`.
 4. **Credentials → Create credentials → OAuth client ID → Web application**:
    - Authorized JavaScript origins: `https://wabmalia.github.io`, `http://localhost:5173`
    - Authorized redirect URIs: `https://wabmalia.github.io/ev-charger/`, `http://localhost:5173/`
-5. Put the client id in `.env` (`VITE_GOOGLE_CLIENT_ID=...`). It is public, so it is committed.
-   It can also be overridden per device under Setup.
+5. **Credentials → Create credentials → API key** for the file picker. Restrict it to the
+   **Google Picker API** and to the websites `https://wabmalia.github.io/*` and `http://localhost:5173/*`.
+6. Put both in `.env` (`VITE_GOOGLE_CLIENT_ID=...`, `VITE_GOOGLE_API_KEY=...`). They are public,
+   so they are committed. The client id can also be overridden per device under Setup.
 
 Because the app stays in "Testing", Google shows an "unverified app" warning on
 sign-in; press Continue. A Google session lasts about an hour. When the app opens
@@ -44,8 +46,22 @@ instead. Everything keeps working offline in the meantime and syncs later.
 No refresh tokens: a static site can't keep the client secret Google requires for
 them, and in Testing mode they would expire after 7 days anyway.
 
-Scopes: `spreadsheets` and `email` (the email is kept on the device as the login
-hint for silent sign-in). Add both under Data access on the consent screen.
+Scopes: `drive.file` and `email` (the email is kept on the device as the login
+hint for silent sign-in). Add both under Data access on the consent screen. Neither
+is sensitive, so publishing the app only needs brand verification, not a scope review.
+
+`drive.file` only lets the app open sheets it created or that the user picked in the
+Google Picker. So a shared sheet is opened with **Choose from Drive** (Settings); there is
+no paste-a-link option, the picker is what grants access. If a connected sheet answers
+"no access" (for example after an invite link), Settings shows **Allow access**.
+
+The picker is a frame from docs.google.com inside the app, so it needs the browser to let
+Google use its cookies there. Browsers with strict cross-site cookie blocking (Waterfox,
+Firefox in strict mode) answer it with a 401 and the picker says the API key is invalid.
+Chrome works; allow cookies for the site or turn off tracking protection for it otherwise.
+Picking is a one-time step per sheet and Google account: the access it grants belongs to
+the account, so picking once in any browser makes the sheet open everywhere, including an
+iPhone PWA where the picker might be blocked.
 
 ## Develop
 

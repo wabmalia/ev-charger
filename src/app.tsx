@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { ChargeForm, newCharge } from './chargeForm';
-import { handleRedirect, isAuthError, sync, token, trySilentSignIn } from './google';
+import { handleRedirect, isAccessError, isAuthError, sync, token, trySilentSignIn } from './google';
 import { History } from './history';
 import { Home, type FormState } from './home';
 import { Setup } from './setup';
@@ -32,6 +32,8 @@ export function App() {
   const [form, setForm] = useState<FormState | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState(bootError ?? '');
+  // The sheet is connected but the app has no permission to it yet (drive.file): pick it in Settings.
+  const [needsAccess, setNeedsAccess] = useState(false);
 
   // Sub-screens push a history entry so the phone's back gesture returns home.
   function go(v: View) {
@@ -67,10 +69,14 @@ export function App() {
     try {
       await sync();
       setSyncError('');
+      setNeedsAccess(false);
       setOffline(false);
     } catch (e) {
       if (e instanceof TypeError) setOffline(true); // fetch failed: no network
-      else setSyncError(isAuthError(e) ? 'Google session expired. Sign in again in Settings.' : String((e as Error).message));
+      else if (isAccessError(e)) {
+        setNeedsAccess(true);
+        setSyncError('EV Charger needs your OK to open this sheet. Press "Allow access" in Settings.');
+      } else setSyncError(isAuthError(e) ? 'Google session expired. Sign in again in Settings.' : String((e as Error).message));
     }
     setSyncing(false);
   }
@@ -158,7 +164,7 @@ export function App() {
         {view === 'home' && <Home go={go} />}
         {view === 'history' && <History />}
         {view === 'stats' && <Stats />}
-        {view === 'setup' && <Setup onSync={runSync} syncError={syncError} />}
+        {view === 'setup' && <Setup onSync={runSync} syncError={syncError} needsAccess={needsAccess} />}
       </main>
 
       {showBar && (

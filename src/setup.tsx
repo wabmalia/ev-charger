@@ -1,14 +1,15 @@
 import { useState } from 'preact/hooks';
 import {
-  clientId, createSpreadsheet, parseSpreadsheetId, redirectUri, sheetUrl, signIn, signOut, token,
+  clientId, createSpreadsheet, redirectUri, sheetUrl, signIn, signOut, token,
 } from './google';
 import { InstallCard } from './install';
+import { pickerAvailable, pickSheet } from './picker';
 import { rateHistory } from './metrics';
 import { confirmReplaceLocal, getState, importData, pendingCount, connectSheet, remove, save, updateSettings, useStore } from './store';
 import { chargeCost, sortKey, uid, type Data, type Meter, type Vehicle } from './types';
 import { EditTag, Field, money, n2s, num, NumInput, parseNum, Sheet } from './ui';
 
-export function Setup(props: { onSync: () => void; syncError: string }) {
+export function Setup(props: { onSync: () => void; syncError: string; needsAccess: boolean }) {
   const { data } = useStore();
   const [editV, setEditV] = useState<Vehicle | null>(null);
   const [editM, setEditM] = useState<Meter | null>(null);
@@ -49,7 +50,7 @@ export function Setup(props: { onSync: () => void; syncError: string }) {
         </ul>
       </section>
 
-      <SyncCard onSync={props.onSync} error={props.syncError} />
+      <SyncCard onSync={props.onSync} error={props.syncError} needsAccess={props.needsAccess} />
 
       <DataCard />
 
@@ -141,12 +142,11 @@ function RateHistory(props: { meterId: string }) {
   );
 }
 
-function SyncCard(props: { onSync: () => void; error: string }) {
+function SyncCard(props: { onSync: () => void; error: string; needsAccess: boolean }) {
   const s = useStore();
   const { spreadsheetId, lastSyncAt } = s.settings;
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
-  const [link, setLink] = useState('');
   const [cid, setCid] = useState(s.settings.clientId);
   const signedIn = !!token();
   const pending = pendingCount(s);
@@ -155,6 +155,20 @@ function SyncCard(props: { onSync: () => void; error: string }) {
     if (mode === 'replace' && !confirmReplaceLocal()) return;
     connectSheet(id, mode);
     props.onSync();
+  }
+
+  /** Google Picker (picker.ts): picking a sheet is what lets the app open it. Null if cancelled. */
+  async function pick(fileId?: string): Promise<string | null> {
+    setMsg('');
+    setBusy(true);
+    try {
+      return await pickSheet(fileId);
+    } catch (e) {
+      setMsg(String((e as Error).message));
+      return null;
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (!clientId()) {
@@ -194,8 +208,8 @@ function SyncCard(props: { onSync: () => void; error: string }) {
         <>
           <p class="signed-in">✓ Signed in with Google <button class="link" onClick={() => { signOut(); updateSettings({}); }}>Sign out</button></p>
           <p class="muted small">
-            Create a fresh sheet. If someone already set one up, ask them for the sheet link
-            (Settings → Copy sheet link) and paste it below.
+            Create a fresh sheet, or if someone already set one up and shared it with you in Google,
+            choose it from your Drive. An existing sheet's data replaces what's on this phone; a new sheet keeps it.
           </p>
           <div class="actions">
             <button class="primary" disabled={busy} onClick={async () => {
@@ -203,16 +217,21 @@ function SyncCard(props: { onSync: () => void; error: string }) {
               try { connect(await createSpreadsheet(), 'upload'); } catch (e) { setMsg(String((e as Error).message)); }
               setBusy(false);
             }}>Create a new sheet</button>
+            {pickerAvailable() && (
+              <button class="secondary" disabled={busy} onClick={async () => {
+                const id = await pick();
+                if (id) connect(id, 'replace');
+              }}>Choose from Drive</button>
+            )}
           </div>
-          <Field label="…or use an existing sheet" hint="Its data replaces what's on this phone. A new sheet keeps it instead." wide>
-            <input value={link} onInput={(e) => setLink((e.target as HTMLInputElement).value)} placeholder="https://docs.google.com/spreadsheets/d/…" />
-          </Field>
-          <div class="actions">
-            <button class="secondary" onClick={() => {
-              const id = parseSpreadsheetId(link);
-              id ? connect(id, 'replace') : setMsg("That doesn't look like a Google Sheets link.");
-            }}>Use this sheet</button>
-          </div>
+          {pickerAvailable() && (
+            <p class="muted small">
+              If Google's file picker shows an error, your browser is blocking Google inside this page
+              (strict privacy settings, for example in Firefox). Turn tracking protection off for this site,
+              or pick the sheet once in another browser such as Chrome: the access is remembered for your
+              Google account, on every device.
+            </p>
+          )}
         </>
       ) : (
         <>
@@ -220,10 +239,17 @@ function SyncCard(props: { onSync: () => void; error: string }) {
             {lastSyncAt ? `Last synced ${new Date(lastSyncAt).toLocaleString()}` : 'Not synced yet'}
             {pending ? ` · ${pending} change(s) pending` : ''}
           </p>
+          {props.needsAccess && signedIn && pickerAvailable() && (
+            <div class="actions">
+              <button class="primary" disabled={busy} onClick={async () => {
+                if (await pick(spreadsheetId)) props.onSync();
+              }}>Allow access</button>
+            </div>
+          )}
           <div class="actions wrap">
             <a class="button ghost" href={sheetUrl(spreadsheetId)} target="_blank" rel="noopener">Open sheet</a>
             <button class="ghost" onClick={async () => {
-              try { await navigator.clipboard.writeText(sheetUrl(spreadsheetId)); setMsg('Sheet link copied. Share the sheet with them in Google (Editor), then they paste this link in Settings.'); }
+              try { await navigator.clipboard.writeText(sheetUrl(spreadsheetId)); setMsg('Sheet link copied. Share the sheet with them in Google (Editor), then they pick it under Settings → Choose from Drive.'); }
               catch { setMsg(sheetUrl(spreadsheetId)); }
             }}>Copy sheet link</button>
           </div>

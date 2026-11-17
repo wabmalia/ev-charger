@@ -8,8 +8,11 @@ import { SCHEMA, TABLES, type Base, type Table } from './types';
  * popup, because popups are unreliable in installed iOS/Android PWAs.
  * The token lasts ~1h; everything works offline in between and syncs later.
  */
+// `drive.file` (non-sensitive): only sheets this app created or the user picked in the Google
+// Picker (see picker.ts), never the rest of their Drive. No sensitive scope means no scope review
+// when the app is published.
 // `email` (basic, non-sensitive) lets us remember which account to use for silent sign-in.
-const SCOPE = 'https://www.googleapis.com/auth/spreadsheets email';
+const SCOPE = 'https://www.googleapis.com/auth/drive.file email';
 const TOKEN_KEY = 'ev-charger:token';
 const STATE_KEY = 'ev-charger:oauth-state';
 const HINT_KEY = 'ev-charger:login-hint';
@@ -105,6 +108,8 @@ function rememberAccount(accessToken: string) {
 }
 
 class AuthError extends Error {}
+/** The sheet exists but this app may not open it yet: the user has to pick it in the Google Picker. */
+class AccessError extends Error {}
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const t = token();
@@ -119,7 +124,10 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-    throw new Error(body?.error?.message ?? `Google Sheets error ${res.status}`);
+    const msg = body?.error?.message ?? `Google Sheets error ${res.status}`;
+    // drive.file: a sheet the app didn't create and the user hasn't picked answers 403 or 404.
+    if (res.status === 403 || res.status === 404) throw new AccessError(msg);
+    throw new Error(msg);
   }
   return (await res.json()) as T;
 }
@@ -128,11 +136,8 @@ export function isAuthError(e: unknown) {
   return e instanceof AuthError;
 }
 
-/** Accepts a sheet URL or a bare id. */
-export function parseSpreadsheetId(input: string): string | null {
-  const m = input.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  if (m) return m[1]!;
-  return /^[a-zA-Z0-9_-]{20,}$/.test(input.trim()) ? input.trim() : null;
+export function isAccessError(e: unknown) {
+  return e instanceof AccessError;
 }
 
 export function sheetUrl(id: string) {
