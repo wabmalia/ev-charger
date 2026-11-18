@@ -28,8 +28,11 @@ Apple developer account (CloudKit). Google works on iPhone too.
 1. https://console.cloud.google.com → create a project (e.g. "EV Charger").
 2. **APIs & Services → Library** → enable **Google Sheets API** and **Google Picker API**.
 3. **OAuth consent screen** (Google Auth Platform): External, app name "EV Charger",
-   leave it in **Testing** and add every user's Gmail under **Test users** (max 100).
-   Data access: add the scope `.../auth/drive.file`.
+   Data access: add the scope `.../auth/drive.file`. Branding: home page, privacy and terms
+   on `https://ev-charger.wabmalia.eu/` (`about.html`, `privacy.html`, `terms.html`), authorized
+   domain `wabmalia.eu`. The domain is verified in Search Console as a Domain property (DNS TXT
+   record in the Hetzner zone); a github.io address can't pass brand verification.
+   Then **Audience → Publish app** (In production). The app is published and brand-verified.
 4. **Credentials → Create credentials → OAuth client ID → Web application**:
    - Authorized JavaScript origins: `https://ev-charger.wabmalia.eu`, `http://localhost:5173`
    - Authorized redirect URIs: `https://ev-charger.wabmalia.eu/`, `http://localhost:5173/`
@@ -38,13 +41,12 @@ Apple developer account (CloudKit). Google works on iPhone too.
 6. Put both in `.env` (`VITE_GOOGLE_CLIENT_ID=...`, `VITE_GOOGLE_API_KEY=...`). They are public,
    so they are committed. The client id can also be overridden per device under Setup.
 
-Because the app stays in "Testing", Google shows an "unverified app" warning on
-sign-in; press Continue. A Google session lasts about an hour. When the app opens
+A Google session lasts about an hour. When the app opens
 with an expired session it renews it silently (a quick redirect to Google with
 `prompt=none` and back); if Google needs you to confirm, it shows "Sign in to sync"
 instead. Everything keeps working offline in the meantime and syncs later.
 No refresh tokens: a static site can't keep the client secret Google requires for
-them, and in Testing mode they would expire after 7 days anyway.
+them.
 
 Scopes: `drive.file` and `email` (the email is kept on the device as the login
 hint for silent sign-in). Add both under Data access on the consent screen. Neither
