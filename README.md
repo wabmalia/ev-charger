@@ -5,7 +5,7 @@ or log one after the fact with start/end %, kWh, meter readings and odometer.
 Tracks electric board meters (latest reading + price per kWh, used as defaults) and
 shows a dashboard with cost, energy, consumption per 100 km, charging efficiency and more.
 
-Live: https://wabmalia.github.io/ev-charger/
+Live: https://ev-charger.wabmalia.eu/ (the old https://wabmalia.github.io/ev-charger/ redirects there)
 
 ## How data is stored
 
@@ -31,10 +31,10 @@ Apple developer account (CloudKit). Google works on iPhone too.
    leave it in **Testing** and add every user's Gmail under **Test users** (max 100).
    Data access: add the scope `.../auth/drive.file`.
 4. **Credentials → Create credentials → OAuth client ID → Web application**:
-   - Authorized JavaScript origins: `https://wabmalia.github.io`, `http://localhost:5173`
-   - Authorized redirect URIs: `https://wabmalia.github.io/ev-charger/`, `http://localhost:5173/`
+   - Authorized JavaScript origins: `https://ev-charger.wabmalia.eu`, `http://localhost:5173`
+   - Authorized redirect URIs: `https://ev-charger.wabmalia.eu/`, `http://localhost:5173/`
 5. **Credentials → Create credentials → API key** for the file picker. Restrict it to the
-   **Google Picker API** and to the websites `https://wabmalia.github.io/*` and `http://localhost:5173/*`.
+   **Google Picker API** and to the websites `https://ev-charger.wabmalia.eu/*` and `http://localhost:5173/*`.
 6. Put both in `.env` (`VITE_GOOGLE_CLIENT_ID=...`, `VITE_GOOGLE_API_KEY=...`). They are public,
    so they are committed. The client id can also be overridden per device under Setup.
 

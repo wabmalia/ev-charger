@@ -1,6 +1,7 @@
 # EV Charger
 
 PWA for logging EV charges, deployed to GitHub Pages from `main` via `.github/workflows/deploy.yml`.
+Live at https://ev-charger.wabmalia.eu (custom domain set in the repo Pages settings; DNS is a CNAME in the Hetzner zone `wabmalia.eu`).
 
 - `src/types.ts` – records + `SCHEMA` (column names of the Google Sheet tabs). Adding a field: add it to
   the interface and `SCHEMA`; sync appends missing columns to existing sheets automatically.
