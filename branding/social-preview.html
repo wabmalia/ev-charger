@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Source for ../public/social-preview.png (1200x630), the link preview on Discord, Slack, etc.
+     Rebuild: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars \
+       --force-device-scale-factor=1 --window-size=1200,630 \
+       --screenshot="$PWD/public/social-preview.png" "file://$PWD/branding/social-preview.html"
+     then bump ?v= on og:image/twitter:image in index.html. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { background: #0f1113; color: #eef0f2; font-family: system-ui, -apple-system, sans-serif;
+         display: flex; align-items: center; gap: 64px; padding: 0 96px; box-sizing: border-box; }
+  img { width: 300px; height: 300px; flex: none; border-radius: 64px; }
+  h1 { margin: 0; font-size: 84px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.05; }
+  p { margin: 20px 0 0; font-size: 38px; line-height: 1.3; color: #a3aab3; }
+  .url { margin-top: 40px; font-size: 30px; color: #f7d36b; }
+</style>
+</head>
+<body>
+  <img src="logo.svg" alt="" />
+  <div>
+    <h1>EV Charger</h1>
+    <p>Log your charges, track cost and consumption. Works offline, syncs with Google Sheets.</p>
+    <p class="url">ev-charger.wabmalia.eu</p>
+  </div>
+</body>
+</html>
