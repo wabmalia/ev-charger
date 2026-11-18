@@ -21,6 +21,7 @@ const NO_SILENT_KEY = 'ev-charger:no-silent';
 /** One silent attempt per app opening (sessionStorage lives as long as the app/tab). */
 const SILENT_TRIED_KEY = 'ev-charger:silent-tried';
 const API = 'https://sheets.googleapis.com/v4/spreadsheets';
+const DRIVE = 'https://www.googleapis.com/drive/v3';
 
 export function clientId(): string {
   return getState().settings.clientId || import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -111,10 +112,11 @@ class AuthError extends Error {}
 /** The sheet exists but this app may not open it yet: the user has to pick it in the Google Picker. */
 class AccessError extends Error {}
 
+/** `path` is relative to the Sheets API, or a full https URL for other Google APIs. */
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const t = token();
   if (!t) throw new AuthError('Not signed in');
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(path.startsWith('https://') ? path : `${API}${path}`, {
     ...init,
     headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json', ...init.headers },
   });
@@ -130,6 +132,24 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new Error(msg);
   }
   return (await res.json()) as T;
+}
+
+export type KnownSheet = { id: string; name: string; modifiedTime: string };
+
+/**
+ * Spreadsheets this Google account already lets the app open: ones it created or that were picked
+ * before, on any device (drive.file access belongs to the account). Plain API call, no picker, so it
+ * also works where browsers block the picker frame (Safari, Firefox strict tracking protection).
+ */
+export async function knownSheets(): Promise<KnownSheet[]> {
+  const p = new URLSearchParams({
+    q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+    orderBy: 'modifiedTime desc',
+    pageSize: '20',
+    fields: 'files(id,name,modifiedTime)',
+  });
+  const r = await api<{ files?: KnownSheet[] }>(`${DRIVE}/files?${p}`);
+  return r.files ?? [];
 }
 
 export function isAuthError(e: unknown) {

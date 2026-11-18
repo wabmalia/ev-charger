@@ -1,6 +1,7 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import {
-  clientId, createSpreadsheet, redirectUri, sheetUrl, signIn, signOut, token,
+  clientId, createSpreadsheet, knownSheets, redirectUri, sheetUrl, signIn, signOut, token,
+  type KnownSheet,
 } from './google';
 import { InstallCard } from './install';
 import { pickerAvailable, pickSheet } from './picker';
@@ -150,6 +151,13 @@ function SyncCard(props: { onSync: () => void; error: string; needsAccess: boole
   const [cid, setCid] = useState(s.settings.clientId);
   const signedIn = !!token();
   const pending = pendingCount(s);
+  const [known, setKnown] = useState<KnownSheet[] | null>(null);
+
+  // Sheets this account already gave the app access to (any device): connect without the picker.
+  useEffect(() => {
+    if (!signedIn || spreadsheetId) return;
+    knownSheets().then(setKnown, () => setKnown([]));
+  }, [signedIn, spreadsheetId]);
 
   function connect(id: string, mode: 'upload' | 'replace') {
     if (mode === 'replace' && !confirmReplaceLocal()) return;
@@ -211,6 +219,18 @@ function SyncCard(props: { onSync: () => void; error: string; needsAccess: boole
             Create a fresh sheet, or if someone already set one up and shared it with you in Google,
             choose it from your Drive. An existing sheet's data replaces what's on this phone; a new sheet keeps it.
           </p>
+          {known && known.length > 0 && (
+            <>
+              <p class="muted small">Sheets you already use with EV Charger:</p>
+              <div class="actions wrap">
+                {known.map((k) => (
+                  <button key={k.id} class="secondary" disabled={busy} onClick={() => connect(k.id, 'replace')}>
+                    {k.name} <span class="muted">· {new Date(k.modifiedTime).toLocaleDateString()}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           <div class="actions">
             <button class="primary" disabled={busy} onClick={async () => {
               setBusy(true);
@@ -227,9 +247,9 @@ function SyncCard(props: { onSync: () => void; error: string; needsAccess: boole
           {pickerAvailable() && (
             <p class="muted small">
               If Google's file picker shows an error, your browser is blocking Google inside this page
-              (strict privacy settings, for example in Firefox). Turn tracking protection off for this site,
-              or pick the sheet once in another browser such as Chrome: the access is remembered for your
-              Google account, on every device.
+              (strict privacy settings, for example Safari or Firefox). Pick the sheet once in another browser
+              such as Chrome: the access belongs to your Google account, so the sheet then shows up above on
+              every device. Or turn tracking protection off for this site.
             </p>
           )}
         </>

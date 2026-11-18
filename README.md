@@ -61,6 +61,8 @@ The picker is a frame from docs.google.com inside the app, so it needs the brows
 Google use its cookies there. Browsers with strict cross-site cookie blocking (Waterfox,
 Firefox in strict mode) answer it with a 401 and the picker says the API key is invalid.
 Chrome works; allow cookies for the site or turn off tracking protection for it otherwise.
+Settings also lists the sheets the account already allowed (Drive API `files.list`, which with
+`drive.file` only returns those), so a new device connects without the picker.
 Picking is a one-time step per sheet and Google account: the access it grants belongs to
 the account, so picking once in any browser makes the sheet open everywhere, including an
 iPhone PWA where the picker might be blocked.
