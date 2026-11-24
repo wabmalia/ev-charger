@@ -207,3 +207,21 @@ export function stretchRange(stretches: Stretch[]) {
   const median = v.length % 2 ? v[mid]! : (v[mid - 1]! + v[mid]!) / 2;
   return { min: v[0]!, median, max: v[v.length - 1]!, count: v.length };
 }
+
+/**
+ * Km driven since the previous finished charge of the same car, keyed by charge id. Only set
+ * when both that charge and the one right before it have an odometer reading (and it went up).
+ */
+export function kmSincePrevious(charges: Charge[]): Map<string, number> {
+  const out = new Map<string, number>();
+  const done = charges.filter((c) => !c.deleted && c.status === 'done').sort((a, b) => sortKey(a) - sortKey(b));
+  const prev = new Map<string, Charge>();
+  for (const c of done) {
+    const p = prev.get(c.vehicleId);
+    if (p?.odometerKm != null && c.odometerKm != null && c.odometerKm > p.odometerKm) {
+      out.set(c.id, c.odometerKm - p.odometerKm);
+    }
+    prev.set(c.vehicleId, c);
+  }
+  return out;
+}

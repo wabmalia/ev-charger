@@ -320,3 +320,4 @@ input[type='date']::-webkit-date-and-time-value, input[type='time']::-webkit-dat
 .settings-btn.status.offline span, .settings-btn.status.bad span { color: inherit; }
 .legal-links { margin: 14px 0 0; }
 .legal-links a { color: var(--text-2); }
+.cc-battery .cc-pct:only-child { margin-left: auto; }

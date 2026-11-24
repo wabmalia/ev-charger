@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeMetrics } from './metrics';
+import { computeMetrics, kmSincePrevious } from './metrics';
 import type { Charge, Vehicle } from './types';
 
 const v: Vehicle = { id: 'v', name: 'Car', batteryKwh: 50, notes: '', updatedAt: 0, deleted: false };
@@ -83,5 +83,22 @@ describe('consumption stretches', () => {
   it('summarises best / typical / worst', async () => {
     const { stretchRange } = await import('./metrics');
     expect(stretchRange(m.stretches)).toMatchObject({ min: expect.closeTo(6.67, 2), max: 10, count: 2 });
+  });
+});
+
+describe('kmSincePrevious', () => {
+  it('uses the previous charge of the same car, only when both have an odometer', () => {
+    const a = ch(1, { odometerKm: 1000 });
+    const b = ch(3, { odometerKm: 1250 });
+    const c = ch(5, {}); // no odometer: nothing for c, and d has no previous reading
+    const d = ch(7, { odometerKm: 1500 });
+    const other = ch(4, { odometerKm: 9000, vehicleId: 'w' });
+    const gone = ch(2, { odometerKm: 1100, deleted: true });
+    const km = kmSincePrevious([d, other, c, gone, b, a]);
+    expect(km.get(b.id)).toBe(250);
+    expect(km.has(a.id)).toBe(false);
+    expect(km.has(c.id)).toBe(false);
+    expect(km.has(d.id)).toBe(false);
+    expect(km.has(other.id)).toBe(false);
   });
 });

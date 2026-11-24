@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { ChargeCard } from './chargeCard';
 import { ChargeForm } from './chargeForm';
-import { monthKey } from './metrics';
+import { kmSincePrevious, monthKey } from './metrics';
 import { useStore } from './store';
 import { chargeCost, sortKey, type Charge } from './types';
 import { money, num, Sheet } from './ui';
@@ -16,6 +16,8 @@ export function History() {
     .sort((a, b) => sortKey(b) - sortKey(a));
   const where = (c: Charge) => data.meters.find((m) => m.id === c.meterId)?.name ?? (c.location || 'Other');
   const vName = (id: string) => data.vehicles.find((v) => v.id === id)?.name ?? '';
+  // From all charges, not just the filtered list, so a car filter doesn't change the numbers.
+  const km = kmSincePrevious(data.charges);
 
   const groups: { key: string; items: Charge[] }[] = [];
   for (const c of charges) {
@@ -51,6 +53,7 @@ export function History() {
                 <ChargeCard
                   charge={c}
                   where={where(c)}
+                  km={km.get(c.id)}
                   car={vehicles.length > 1 ? vName(c.vehicleId) : undefined}
                   onEdit={() => setEdit(c)}
                 />

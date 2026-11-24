@@ -108,7 +108,7 @@ export function MeterForm(props: { meter: Meter; onDone: () => void }) {
     }}>
       <div class="grid">
         <Field label="Name" wide><input value={name} placeholder="e.g. Home" required onInput={(e) => setName((e.target as HTMLInputElement).value)} /></Field>
-        <Field label="Price per kWh" hint="for new charges, past ones keep their rate"><NumInput value={price} onInput={setPrice} placeholder="0.18" /></Field>
+        <Field label="Price per kWh"><NumInput value={price} onInput={setPrice} placeholder="0.18" /></Field>
         <Field label="Current reading (kWh)"><NumInput value={reading} onInput={setReading} placeholder="12345.6" /></Field>
         <Field label="Notes" wide><input value={notes} onInput={(e) => setNotes((e.target as HTMLInputElement).value)} placeholder="tariff, contract..." /></Field>
       </div>

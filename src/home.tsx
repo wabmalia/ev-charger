@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { ChargeCard } from './chargeCard';
 import { ChargeForm, type Mode } from './chargeForm';
-import { computeMetrics } from './metrics';
+import { computeMetrics, kmSincePrevious } from './metrics';
 import { InstallBanner } from './install';
 import { MeterForm, VehicleForm } from './setup';
 import { useStore } from './store';
@@ -34,6 +34,7 @@ export function Home(props: { go: (v: 'history' | 'stats') => void }) {
   const monthKwh = month.reduce((a, c) => a + (c.kwh ?? 0), 0);
   const monthCost = month.reduce((a, c) => a + (chargeCost(c) ?? 0), 0);
   const m = computeMetrics(charges, data.vehicles, where);
+  const km = kmSincePrevious(charges);
 
   if (!vehicles.length) return <Onboarding />;
 
@@ -83,6 +84,7 @@ export function Home(props: { go: (v: 'history' | 'stats') => void }) {
               <ChargeCard
                 charge={c}
                 where={where(c)}
+                km={km.get(c.id)}
                 car={vehicles.length > 1 ? vName(c.vehicleId) : undefined}
                 onEdit={() => setEdit(c)}
               />
